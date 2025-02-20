@@ -4,12 +4,14 @@ import Image from "next/image";
 import { Inter } from "next/font/google";
 import { useDispatch, useSelector } from "react-redux";
 import { setSelectedCategory } from "@/redux/slices/categorySlice";
+import { useState } from "react";
+import FilterModal from "./FilterPopup";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export default function TabsBar() {
   const dispatch = useDispatch();
-  // Using plain hooks without extra typing; you can type state if desired.
+  const [showFilter, setShowFilter] = useState(false);
   const selectedCategory = useSelector((state: any) => state.category.selectedCategory);
 
   // Define tab data
@@ -23,29 +25,35 @@ export default function TabsBar() {
 
   return (
     <div
-      className={`${inter.className} flex items-center justify-between bg-[#1C1C1C] py-[1.5rem] px-[7.25rem]`}
+      className={`
+        ${inter.className} flex items-center justify-between 
+        bg-[#1C1C1C] px-4 py-4 md:px-[7.25rem] md:py-[1.5rem]
+      `}
     >
       {/* Left: Icon + text tabs */}
-      <div className="flex space-x-8">
+      <div className="flex space-x-6 md:space-x-8 overflow-x-auto md:overflow-x-visible whitespace-nowrap">
         {tabs.map((tab) => (
           <div
             key={tab.value}
-            className="flex flex-col items-center cursor-pointer relative"
+            className="flex flex-col items-center cursor-pointer relative p-2"
             onClick={() => dispatch(setSelectedCategory(tab.value))}
           >
-            <Image alt={tab.label} className="mb-4" src={tab.icon} width={27} height={27} />
-            <span className="text-white text-sm">{tab.label}</span>
-            {/* Underline if this tab is selected */}
+            <Image alt={tab.label} className="mb-2 md:mb-4" src={tab.icon} width={27} height={27} />
+            <span className="text-white text-[0.75rem] md:text-sm">{tab.label}</span>
             {selectedCategory === tab.value && (
-              <div className="absolute rounded-t-md -bottom-6 h-[10px] left-0 right-0 bg-[#0A84FF]" />
+              <div className="md:absolute h-4 md:-bottom-6 md:left-0 md:right-0 md:h-2 bg-[#0A84FF] rounded-t-md" />
             )}
           </div>
+          
         ))}
       </div>
 
-      {/* Right: Filter and Show map buttons */}
-      <div className="flex space-x-4">
-        <button className="bg-[#2F2F2F] w-20 text-sm text-white px-4 py-2 rounded-full hover:bg-gray-600 transition">
+      {/* Right: Filter & Show Map buttons (hidden on mobile) */}
+      <div className="hidden md:flex space-x-4">
+        <button
+          onClick={() => setShowFilter(true)}
+          className="bg-[#2F2F2F] w-20 text-sm text-white px-4 py-2 rounded-full hover:bg-gray-600 transition"
+        >
           Filter
         </button>
         <button className="flex flex-row bg-[#2F2F2F] w-36 h-10 items-center justify-center text-sm text-white space-x-2 px-4 py-2 rounded-full hover:bg-gray-600 transition">
@@ -53,6 +61,8 @@ export default function TabsBar() {
           <div>Show map</div>
         </button>
       </div>
+
+      <FilterModal isOpen={showFilter} onClose={() => setShowFilter(false)} />
     </div>
   );
 }
