@@ -76,12 +76,12 @@ export default function Home() {
         },
     ];
     return (
-        <div>
+        <div className='bg-black'>
             <TabsBar />
             {/* Main Content */}
-            <div className="min-h-screen -z-[400] bg-gray-100 p-4">
+            <div className="min-h-screen -z-[400] bg-gray-100 rounded-t-3xl p-4">
                 {/* A responsive grid for the cards */}
-                <div className="max-w-7xl mt-10 mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12">
+                <div className="max-w-7xl mt-10 mx-auto  grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12">
                     {dummyProperties.map((property, index) => (
                         <PropertyCardCarousel
                             key={index}
