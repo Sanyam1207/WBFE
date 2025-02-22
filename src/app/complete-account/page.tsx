@@ -1,21 +1,19 @@
 "use client";
 
+import Navbar from "@/components/NavBar";
 import { Inter } from "next/font/google";
 import Image from "next/image";
 import { useState } from "react";
 
-
-
 const inter = Inter({
     subsets: ["latin"],
-})
-export default function CompleteProfileMobile() {
-    // Example states (optional)
+});
+
+export default function CompleteProfile() {
     const [gender, setGender] = useState("");
     const [about, setAbout] = useState("");
     const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
 
-    // Example language list
     const languages = [
         "English",
         "French",
@@ -41,158 +39,159 @@ export default function CompleteProfileMobile() {
         );
     };
 
-    return (
-        <div className={`w-full min-h-screen md:hidden  flex flex-col ${inter.className}`}>
+    // Common form elements used in both mobile and desktop views
+    const FormElements = () => (
+        <>
+            {/* Gender Select */}
+            <div className="mb-6">
+                <label className="block mb-2 text-sm font-medium">
+                    Gender
+                </label>
+                <div className="relative">
+                    <select
+                        value={gender}
+                        onChange={(e) => setGender(e.target.value)}
+                        className="border border-gray-400 rounded-xl py-3 px-4 bg-transparent w-96 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option value="" disabled>
+                            Select
+                        </option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                        <option value="Prefer not to disclose">
+                            Prefer not to disclose
+                        </option>
+                    </select>
 
-            <div className="relative  bg-[#1F1F21] text-white pt-10 pb-8 px-4">
-                {/* Back button (absolute) */}
-                <button
-                    onClick={() => alert("Go back!")}
-                    className="absolute top-4 left-4 text-white bg-[#353537] rounded-full p-3 flex items-center"
-                >
-                    <Image src={'/icons/backarrow.svg'} alt="back icon" width={15} height={15} />
-                </button>
-
-                {/* Centered title: "Profile" */}
-                <h1 className="text-center text-base font-base">Profile</h1>
-
-                {/* Avatar + text */}
-                <div className="mt-1 mb-3 flex flex-col items-center">
-                    <h2 className="mt-2 text-lg font-semibold">Complete your profile!</h2>
-                    <p className="text-sm text-gray-300 mb-5">Stand out and Shine ✨</p>
-                    <div className="w-20 h-20 rounded-full bg-gray-200 relative flex items-center justify-center">
-                        <Image className="rounded-full right-1 bottom-2 bg-[#0A84FF] text-white absolute" src='/icons/plusicon.svg' alt="Add profile picture" width={15} height={15} />
-                        <span className="text-3xl">🙂</span>
-                    </div>
-
-                    <button className="mt-4 text-grey-300 text-sm">
-                        Add your profile picture
-                    </button>
                 </div>
             </div>
 
-            {/* 
-        BOTTOM WHITE SECTION 
-        (rounded top corners)
-      */}
-            <div className="bg-white z-10 rounded-t-3xl -mt-4 px-4 pt-6 flex-1">
-                {/* Gender Dropdown */}
-                <div className="mb-6">
-                    <label className="block mb-2 text-sm font-medium text-gray-700">
-                        Gender
-                    </label>
-                    <div className="relative">
-                        <select
-                            value={gender}
-                            onChange={(e) => setGender(e.target.value)}
-                            className="
-                block w-full
-                border border-gray-300
-                rounded-md
-                py-5 px-3
-                bg-white
-                text-gray-700
-                focus:outline-none
-                focus:ring-1 focus:ring-blue-500
-                focus:border-blue-500
-                appearance-none
-              "
-                        >
-                            <option value="" disabled>
-                                Select gender
-                            </option>
-                            <option className="text-sm" value="Male">Male</option>
-                            <option value="Female">Female</option>
-                            <option value="Other">Other</option>
-                            <option value="Prefer not to disclose">
-                                Prefer not to disclose
-                            </option>
-                        </select>
-                        {/* Dropdown arrow */}
-                        <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                            <svg
-                                className="w-4 h-4 text-gray-700"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                viewBox="0 0 24 24"
+            {/* Languages */}
+            <div className="mb-6">
+                <label className="block mb-3 text-sm font-medium text-gray-700">
+                    Select the languages that apply
+                </label>
+                <div className="flex flex-wrap gap-2">
+                    {languages.map((lang) => {
+                        const isSelected = selectedLanguages.includes(lang);
+                        return (
+                            <button
+                                key={lang}
+                                onClick={() => toggleLanguage(lang)}
+                                className={`px-3 py-1 rounded-full text-sm border transition-colors ${isSelected
+                                    ? "bg-blue-500 border-blue-500 text-white"
+                                    : "border-gray-600 hover:bg-gray-50"
+                                    }`}
                             >
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </div>
-                    </div>
+                                {lang}
+                            </button>
+                        );
+                    })}
                 </div>
-
-                {/* Language Chips */}
-                <div className="mb-6">
-                    <label className="block mb-5 text-sm font-medium text-gray-700">
-                        Select the languages that apply
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                        {languages.map((lang) => {
-                            const isSelected = selectedLanguages.includes(lang);
-                            return (
-                                <button
-                                    key={lang}
-                                    onClick={() => toggleLanguage(lang)}
-                                    className={`
-                    px-4 py-2
-                    my-1
-                    rounded-full
-                    text-sm
-                    border
-                    ${isSelected
-                                            ? "bg-blue-500 border-blue-500 text-white"
-                                            : "border-gray-800 text-gray-700 hover:bg-gray-100"
-                                        }
-                  `}
-                                >
-                                    {lang}
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {/* About Textarea */}
-                <div className="mb-6">
-                    <label className="block mb-2 text-sm font-medium text-gray-700">
-                        Your about ?
-                    </label>
-                    <textarea
-                        rows={3}
-                        value={about}
-                        onChange={(e) => setAbout(e.target.value)}
-                        placeholder="Eg: work, hobby, lifestyle, anything"
-                        className="
-              w-full
-              border border-gray-300
-              rounded-md
-              p-3
-              bg-[#F4F4F4]
-              focus:outline-none
-              focus:ring-1 focus:ring-blue-500
-              focus:border-blue-500
-            "
-                    />
-                </div>
-
-                {/* Save Button */}
-                <button
-                    onClick={() => alert("Profile saved!")}
-                    className="
-            w-full
-            bg-black
-            text-white
-            py-4
-            rounded-full
-            text-sm font-medium
-            hover:bg-gray-800
-          "
-                >
-                    Save
-                </button>
             </div>
-        </div>
+
+            {/* About */}
+            <div className="mb-6">
+                <label className="block mb-2 text-sm font-medium text-gray-700">
+                    About you?
+                </label>
+                <textarea
+                    rows={4}
+                    value={about}
+                    onChange={(e) => setAbout(e.target.value)}
+                    placeholder="Eg: work, hobby, lifestyle, anything"
+                    className="w-full border border-gray-600 rounded-xl p-4 bg-[#F4F4F4] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+            </div>
+
+            {/* Save Button */}
+            <button
+                onClick={() => alert("Profile saved!")}
+                className="w-full bg-black text-white py-4 rounded-full font-medium hover:bg-gray-900 transition-colors"
+            >
+                Save
+            </button>
+        </>
+    );
+
+    return (
+        <>
+            {/* Mobile View */}
+            <div
+                className={`md:hidden min-h-screen bg-black flex flex-col ${inter.className}`}
+            >
+                <div className="relative bg-black text-white pt-6 pb-6 px-4">
+                    <button
+                        onClick={() => alert("Go back!")}
+                        className="absolute top-6 left-4 text-white"
+                    >
+                        <Image
+                            src={"/icons/backarrow.svg"}
+                            alt="back icon"
+                            width={20}
+                            height={20}
+                        />
+                    </button>
+
+                    <h1 className="text-center text-base">Profile</h1>
+
+                    <div className="mt-4 mb-3 flex flex-col items-center">
+                        <h2 className="text-xl font-semibold">Complete your profile!</h2>
+                        <p className="text-sm text-gray-400 mt-1">Stand out and Shine ✨</p>
+                        <div className="w-20 h-20 rounded-full bg-pink-100 mt-4 relative flex items-center justify-center">
+                            <span className="text-4xl">😊</span>
+                            <button className="absolute right-0 bottom-0 bg-blue-500 text-white p-2 rounded-full">
+                                <Image src="/icons/plusicon.svg" alt="Add" width={16} height={16} />
+                            </button>
+                        </div>
+                        <button className="mt-2 text-gray-400 text-sm">
+                            Add your profile picture
+                        </button>
+                    </div>
+                </div>
+
+                <div className="bg-white flex-1 rounded-t-3xl px-4 pt-6">
+                    <FormElements />
+                </div>
+            </div>
+
+            {/* Desktop View */}
+            <div className="bg-black">
+                <div
+                    className={`hidden text-[#2C3C4E] md:flex min-h-screen w-full bg-[#F4F4F4] flex-col ${inter.className} rounded-t-3xl`}
+                >
+                    <Navbar />
+                    {/* Main Content */}
+                    <div className="flex-1 max-w-2xl mx-auto w-full py-12 px-4">
+                        <div className="text-start mb-8">
+                            <h2 className="text-xl  font-semibold mb-2">
+                                Complete your profile!
+                            </h2>
+                            <p className="">Stand out and Shine ✨</p>
+
+                            <div className="mt-6 mb-2">
+                                <div className="w-24 h-24 bg-pink-100 rounded-full relative flex items-start justify-start">
+                                    <span className="text-4xl absolute top-7 right-6">😊</span>
+                                    <button className="absolute right-0 bottom-0 bg-blue-500 text-white p-2 rounded-full">
+                                        <Image
+                                            src="/icons/plusicon.svg"
+                                            alt="Add"
+                                            width={16}
+                                            height={16}
+                                        />
+                                    </button>
+                                </div>
+                            </div>
+                            <button className="text-gray-500 text-sm mt-2">
+                                Add your profile picture
+                            </button>
+                        </div>
+
+                        <FormElements />
+                    </div>
+                </div>
+            </div>
+        </>
     );
 }
