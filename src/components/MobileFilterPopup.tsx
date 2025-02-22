@@ -45,11 +45,11 @@ const MobileFilterModal: React.FC<MobileFilterModalProps> = ({ isOpen, onClose }
                     <div className="mb-6">
                         <label className="block text-sm font-medium mb-2">Price range</label>
                         <div className="flex space-x-3">
-                            <select className="border rounded-md px-3 py-3 w-32">
+                            <select className="border rounded-md px-3 py-5 w-32">
                                 <option className="text-sm">$0</option>
                                 <option className="text-sm">$100</option>
                             </select>
-                            <select className="border rounded-md px-3 py-3 w-44">
+                            <select className="border rounded-md px-3 py-5 w-44">
                                 <option className="text-sm">Max value</option>
                                 <option className="text-sm">$1000</option>
                             </select>
@@ -61,11 +61,11 @@ const MobileFilterModal: React.FC<MobileFilterModalProps> = ({ isOpen, onClose }
                     <div className="mb-6">
                         <label className="block text-sm font-medium mb-2">Bedrooms & Bathrooms</label>
                         <div className="flex space-x-3">
-                            <select className="border rounded-md px-3 py-3 w-1/2">
+                            <select className="border rounded-md px-3 py-5 w-44">
                                 <option className="text-sm">Bedrooms</option>
                                 <option className="text-sm">1</option>
                             </select>
-                            <select className="border rounded-md px-3 py-3 w-1/2">
+                            <select className="border rounded-md px-3 py-5 w-44">
                                 <option className="text-sm">Bathrooms</option>
                                 <option className="text-sm">1</option>
                             </select>
@@ -75,11 +75,11 @@ const MobileFilterModal: React.FC<MobileFilterModalProps> = ({ isOpen, onClose }
 
                     {/* Stay Duration */}
                     <div className="mb-6">
-                        <label className="block text-sm font-medium mb-2">Preferred stay duration</label>
+                        <label className="block text-sm font-medium mb-3">Preferred stay duration</label>
                         <div className="flex space-x-3">
                             <button
                                 onClick={() => setSelectedStayDuration("lt6")}
-                                className={`border rounded-full px-4 py-2 ${selectedStayDuration === "lt6" ? "bg-blue-500 text-white" : "border-gray-300"
+                                className={`border rounded-full px-3 py-5 ${selectedStayDuration === "lt6" ? "bg-blue-500 text-white" : "border-gray-300"
                                     }`}
                             >
                                 Less than 6 months
@@ -103,9 +103,10 @@ const MobileFilterModal: React.FC<MobileFilterModalProps> = ({ isOpen, onClose }
                                 <button
                                     key={filter}
                                     onClick={() => toggleFilter(filter)}
-                                    className={`border rounded-full px-4 py-2 ${selectedFilters.includes(filter) ? "bg-blue-500 text-white" : "border-gray-300"
+                                    className={`border rounded-full px-6 py-5 ${selectedFilters.includes(filter) ? "bg-blue-500 text-white" : "border-gray-300"
                                         }`}
                                 >
+                                    {/* Vihaan1234* */}
                                     {filter}
                                 </button>
                             ))}
@@ -116,19 +117,28 @@ const MobileFilterModal: React.FC<MobileFilterModalProps> = ({ isOpen, onClose }
                     {/* Sort Listing */}
                     <div className="mb-6">
                         <label className="block text-sm font-medium mb-2">Sort listing</label>
-                        <div className="flex flex-col space-y-2 text-sm">
-                            <label className="flex items-center space-x-2">
-                                <input type="radio" name="sort" className="accent-black" />
-                                <span>Price: low to high</span>
-                            </label>
-                            <label className="flex items-center space-x-2">
-                                <input type="radio" name="sort" className="accent-black" />
-                                <span>Newest first</span>
-                            </label>
-                            <label className="flex items-center space-x-2">
-                                <input type="radio" name="sort" className="accent-black" />
-                                <span>Most relevant</span>
-                            </label>
+                        <div className="flex flex-col space-y-2 mb-4 mt-5 text-sm">
+                            <div className="">
+                                <label className="flex items-center space-x-2 ">
+                                    <input type="radio" name="sort" className="accent-black" />
+                                    <span>Price: low to high</span>
+                                </label>
+                            </div>
+
+                            <div className="">
+                                <label className="flex items-center space-x-2 ">
+                                    <input type="radio" name="sort" className="accent-black" />
+                                    <span>Newest first</span>
+                                </label>
+                            </div>
+
+                            <div className="">
+                                <label className="flex items-center space-x-2">
+                                    <input type="radio" name="sort" className="accent-black" />
+                                    <span>Most relevant</span>
+                                </label>
+                            </div>
+
                         </div>
                     </div>
                 </div>
