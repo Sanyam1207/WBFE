@@ -1,11 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { Inter } from "next/font/google";
 import Image from "next/image";
+import { useState } from "react";
 
-import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
-import { ChevronDownIcon } from '@heroicons/react/20/solid'
 
 
 const inter = Inter({
