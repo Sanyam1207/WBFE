@@ -1,33 +1,42 @@
-import React, { useRef, useLayoutEffect, useState, useEffect } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import Menu from "./Menu";
+import { Package2Icon } from "lucide-react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import rough from "roughjs/bundled/rough.esm";
+import { v4 as uuid } from "uuid";
+import ring from '.././resources/audio/ring.mp3';
+import CursorOverlay from "../CursorOverlay/CursorOverlay";
+import AiSearchPopup from "../components/AiSearchPopup";
+import PdfViewer from "../components/PdfViewer";
 import { actions, cursorPositions, toolTypes } from "../constants";
+import { emitAudioStream, emitCursorPosition, emitFile, emitMessages, emitStudentSleeping, quiz } from "../socketConn/socketConn";
+import { clearAudioStream } from "../store/audioSlice";
+import { clearFile } from "../store/fileSlice";
+import { store } from "../store/store";
+import Menu from "./Menu";
+import image from './image.png';
 import {
-  createElement,
-  updateElement,
-  drawElement,
-  adjustmentRequired,
   adjustElementCoordinates,
-  getElementAtPosition,
+  adjustmentRequired,
+  createElement,
+  drawElement,
   getCursorForPosition,
+  getElementAtPosition,
   getResizedCoordinates,
+  updateElement,
   updatePencilElementWhenMoving,
 } from "./utils";
-import { v4 as uuid } from "uuid";
 import { setMessages, updateElement as updateElementInStore } from "./whiteboardSlice";
-import { emitAudioStream, emitCursorPosition, emitMessages, emitStudentSleeping, quiz } from "../socketConn/socketConn";
-import ring from '.././resources/audio/ring.mp3'
-import { store } from "../store/store";
-import { clearAudioStream } from "../store/audioSlice";
+
+
+
 
 let emitCursor = true;
 let lastCursorPosition;
 
+
 const Whiteboard = ({ role, userID, roomID }) => {
   const canvasRef = useRef();
   const textAreaRef = useRef();
-  console.log(role)
   if (role === "teacher") {
     emitCursor = true
   } else {
@@ -36,8 +45,10 @@ const Whiteboard = ({ role, userID, roomID }) => {
 
   // eslint-disable-next-line
   const [moveCanvas, setMoveCanvas] = useState("");
+  const file = useSelector((state) => state.file.file);
   // eslint-disable-next-line
   const toolType = useSelector((state) => state.whiteboard.tool);
+  const [AISearchOpen, setAISearchOpen] = useState(false)
   // eslint-disable-next-line
   const elements = useSelector((state) => state.whiteboard.elements);
   // eslint-disable-next-line
@@ -54,6 +65,7 @@ const Whiteboard = ({ role, userID, roomID }) => {
   const [openImageModel, setOpenImageModel] = useState()
   const [imageUrl, setImageUrl] = useState()
   const [input, setInput] = useState('')
+  const [showPdf, setShowPdf] = useState(true)
 
   const [action, setAction] = useState(null);
   // eslint-disable-next-line
@@ -79,20 +91,24 @@ const Whiteboard = ({ role, userID, roomID }) => {
   const audioStream = useSelector(state => state.audioStreaming.audioStream);
 
 
+  useEffect(() => {
+    const handleSpacebar = (e) => {
+      // Check if the spacebar was pressed
+      if (e.code === "Space" || e.keyCode === 32) {
+        doNotSendData();
+      }
+    };
 
+    if (showPopup) {
+      window.addEventListener("keydown", handleSpacebar);
+    }
 
-
-
-
-
-
-
-
-
-
-
-
-
+    // Cleanup listener when popup is hidden or component unmounts
+    return () => {
+      window.removeEventListener("keydown", handleSpacebar);
+    };
+    // eslint-disable-next-line
+  }, [showPopup]);
 
 
   useEffect(() => {
@@ -133,7 +149,7 @@ const Whiteboard = ({ role, userID, roomID }) => {
             mediaRecorderRef.current.start();
             setTimeout(() => {
               mediaRecorderRef.current.stop();
-            }, 100);
+            }, 50);
           });
 
           // Initial start
@@ -166,8 +182,10 @@ const Whiteboard = ({ role, userID, roomID }) => {
     if (role === 'student' && audioStream) {
       const audio = new Audio(audioStream);
       audio.play().catch(error => {
-        console.error('Error playing audio:', error);
-        dispatch(clearAudioStream());
+        if (error.name !== "AbortError") {
+          console.error('Error playing audio:', error);
+          dispatch(clearAudioStream());
+        }
       });
 
       return () => {
@@ -215,11 +233,35 @@ const Whiteboard = ({ role, userID, roomID }) => {
           return newCount
         })
 
-      }, 1 * 60 * 1000); // Every 3 minutes
+      }, 1000000000000 * 10);
 
       return () => clearInterval(popupInterval); // Cleanup interval on unmount
     }
   }, [role, roomID, userID]);
+
+
+  useEffect(() => {
+    if (file) {
+      // Create a Blob from the file data (assumed to be binary data)
+      const blob = new Blob([file.data], { type: file.fileType });
+      const url = URL.createObjectURL(blob);
+
+      // Create a temporary link and trigger the download
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = file.fileName;
+      document.body.appendChild(link);
+      link.click();
+
+      // Clean up: remove the link and revoke the object URL
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      // Optionally clear the file from the store after download
+      dispatch(clearFile());
+    }
+  }, [file, dispatch]);
+
 
 
   useLayoutEffect(() => {
@@ -227,7 +269,6 @@ const Whiteboard = ({ role, userID, roomID }) => {
     const ctx = canvas.getContext("2d");
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    console.log(elements);
 
 
     const roughCanvas = rough.canvas(canvas);
@@ -378,18 +419,21 @@ const Whiteboard = ({ role, userID, roomID }) => {
   const handleMouseMove = (event) => {
     const { clientX, clientY } = event;
 
-    lastCursorPosition = { x: clientX, y: clientY };
+    lastCursorPosition = {
+      cursorData: { x: clientX, y: clientY },
+      roomID: roomID
+    };
 
     if (emitCursor) {
-      emitCursorPosition({ x: clientX, y: clientY });
-      emitCursor = false;
-
-      console.log("sending-position");
+      emitCursorPosition({
+        cursorData: { x: clientX, y: clientY },
+        roomID: roomID
+      });
 
       setTimeout(() => {
         emitCursor = true;
         emitCursorPosition(lastCursorPosition);
-      }, [50]);
+      }, [80]);
     }
 
     if (action === actions.DRAWING) {
@@ -559,6 +603,27 @@ const Whiteboard = ({ role, userID, roomID }) => {
   }
 
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    // Read the file as a Data URL
+    reader.readAsDataURL(file);
+    reader.onload = (evt) => {
+      // evt.target.result is a Data URL (a base64 encoded string)
+      emitFile({
+        roomID,
+        fileName: file.name,
+        fileType: file.type,
+        fileData: evt.target.result,  // Data URL string
+      });
+    };
+
+  };
+
+
 
   return (
     <>
@@ -573,13 +638,13 @@ const Whiteboard = ({ role, userID, roomID }) => {
                 position: "absolute",
                 top: selectedElement.y1 - 3,
                 left: selectedElement.x1,
-                font: "24px sans-serif",
+                font: "12px sans-serif",
                 margin: 0,
                 padding: 0,
                 border: 0,
                 outline: 0,
                 resize: "auto",
-                overflow: "hidden",
+                overflow: "visible",
                 whiteSpace: "pre",
                 background: "transparent",
               }}
@@ -641,34 +706,35 @@ const Whiteboard = ({ role, userID, roomID }) => {
         </div>
       )}
 
-      {role === 'student' &&
-        showPopup && (
-          <div style={{
-            padding: '4px',
-            border: '2px solid black',
-            width: '200px',
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            borderRadius: '20px',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#787878',
-            color: '#fff',
-            justifyContent: 'center',
-            alignItems: 'center'
-          }}>
+      {role === 'student' && <CursorOverlay />}
+
+      {role === 'student' && showPopup && (
+        <div style={{
+
+          border: '2px solid black',
+          width: '200px',
+          position: 'absolute',
+          top: '80vh',
+          right: '0vh',
+          borderRadius: '20px',
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: '#787878',
+          color: '#fff',
+          justifyContent: 'center',
+          alignItems: 'center'
+        }}>
+          <button style={{
+            height: '100%',
+            width: '100%',
+          }} className="awake-button"
+            onClick={() => { doNotSendData() }}
+          >
             <h2>Are You Awake ?</h2>
-            <button className="awake-button"
-              style={{
-                padding: '10px',
-                width: '50px',
-              }}
-              onClick={() => { doNotSendData() }}
-            >Yes</button>
-          </div>
-        )
-      }
+            <p>Press SPACE to confirm</p>
+          </button>
+        </div>
+      )}
 
       <canvas
         onMouseDown={handleMouseDown}
@@ -685,9 +751,10 @@ const Whiteboard = ({ role, userID, roomID }) => {
         <div
           style={{
             position: 'absolute',
-            fontSize: '1.2rem',
+            fontSize: '2.2rem',
             bottom: 20,
-            right: 10
+            right: 10,
+            zIndex: 10
           }}
         >
           {sleptStudent} is sleeping
@@ -770,9 +837,103 @@ const Whiteboard = ({ role, userID, roomID }) => {
         )
       }
 
+      <button onClick={() => setAISearchOpen(true)}
+        style={{
+          padding: 4,
+          borderRadius: 5,
+          position: 'absolute',
+          top: 4,
+          left: 10,
+          margin: 0
+        }}
+      ><img src={image} alt="crashed" style={{
+        height: '30px',
+        width: 'auto',
+      }} /></button>
+      {AISearchOpen && <AiSearchPopup userID={userID} onClose={setAISearchOpen} />}
+
       <button onClick={() => setOpenChatModal(true)} className="chatbutton">
         Open Chat
       </button>
+
+      {role === 'teacher' && (<div style={{ position: 'absolute', top: 5, left: 60 }}>
+        {/* 
+        1. Hide the actual file input 
+        2. Style the label as your “sexy button”
+      */}
+        <input
+          id="file-upload"
+          type="file"
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+        />
+        <label
+          htmlFor="file-upload"
+          style={{
+            display: 'inline-block',
+            backgroundColor: '#36408a', // Pink accent
+            color: '#fff',
+            padding: '12px 20px',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+            transition: 'background-color 0.3s ease'
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#141c59')}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#595e91')}
+        >
+          Upload File
+        </label>
+      </div>)}
+
+      <div 
+  onClick={() => setShowPdf(true)}
+  style={{
+    position: 'absolute',
+    top: 5,
+    left: 200,
+    width: '40px',
+    height: '40px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'linear-gradient(45deg, #FF4081, #E91E63)',
+    borderRadius: '50%',
+    cursor: 'pointer',
+    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+    transition: 'transform 0.2s, box-shadow 0.2s'
+  }}
+  onMouseEnter={e => {
+    e.currentTarget.style.transform = 'scale(1.1)';
+    e.currentTarget.style.boxShadow = '0 6px 12px rgba(0, 0, 0, 0.4)';
+  }}
+  onMouseLeave={e => {
+    e.currentTarget.style.transform = 'scale(1)';
+    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
+  }}
+>
+  <Package2Icon style={{ color: '#fff', fontSize: '24px' }} />
+</div>
+
+      {showPdf && (<div style={{
+        position: 'absolute',
+        bottom: 10,
+        right: 10,
+        display: 'flex',
+        padding: 10,
+        backgroundColor: '#fff',
+
+      }}>
+        <button onClick={() => {setShowPdf(false)}} style={{
+          backgroundColor: '#303038',
+          color: '#fff',
+        }}>
+          X
+        </button>
+        <PdfViewer />
+      </div>)}
 
     </>
   );

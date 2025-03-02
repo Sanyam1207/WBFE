@@ -9,7 +9,7 @@ function WhiteboardPage() {
 
   const location = useLocation();
   const data = location.state;
-  console.log(data);
+  console.log(`from min wb page${JSON.stringify(data)}`);
 
 
   useEffect(() => {

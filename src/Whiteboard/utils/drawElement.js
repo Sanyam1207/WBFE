@@ -13,16 +13,32 @@ const drawPencilElement = (context, element) => {
   context.fill(myPath);
 };
 
-const drawTextElement = (context, element) => {
+const drawTextElement = (context, element, wordsPerLine = 30) => {
   context.textBaseline = "top";
-  context.font = "24px sans-serif";
-  context.fillText(element.text, element.x1, element.y1);
+  context.font = "15px sans-serif";
+
+  // Split text into words
+  const words = element.text.split(" ");
+  const lines = [];
+
+  // Create lines with a maximum of 'wordsPerLine' words per line
+  for (let i = 0; i < words.length; i += wordsPerLine) {
+    let line = words.slice(i, i + wordsPerLine).join(" ");
+    lines.push(line);
+  }
+
+  const lineHeight = 16; // Adjust line height based on font size
+  // Render each line
+  lines.forEach((line, index) => {
+    context.fillText(line, element.x1, element.y1 + index * lineHeight);
+  });
 };
+
 
 const drawImageElement = (context, element) => {
   const img = new Image()
   img.src = element.src
-  context.drawImage(img, element.x1, element.y1, img.naturalWidth/6, img.naturalHeight/6);
+  context.drawImage(img, element.x1, element.y1, img.naturalWidth / 6, img.naturalHeight / 6);
 }
 
 export const drawElement = ({ roughCanvas, context, element }) => {

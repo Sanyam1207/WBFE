@@ -5,7 +5,11 @@ import { emitElementUpdate } from "../../socketConn/socketConn";
 const generator = rough.generator();
 
 const generateRectangle = ({ x1, y1, x2, y2 }) => {
-  return generator.rectangle(x1, y1, x2 - x1, y2 - y1);
+  return generator.rectangle(x1, y1, x2 - x1, y2 - y1, {
+    fill: 'red',
+    hachureAngle: 60, // angle of hachure,
+    hachureGap: 8
+  });
 };
 
 const generateLine = ({ x1, y1, x2, y2 }) => {
@@ -49,7 +53,7 @@ export const createElement = ({ x1, y1, x2, y2, toolType, id, text, src, roomID 
 
       const img = new Image();
       img.src = src;
-      const element = {id, type: toolType,img, src, x1, y1, x2, y2}
+      const element = { id, type: toolType, img, src, x1, y1, x2, y2 }
       emitElementUpdate(element, roomID)
 
       return { id, type: toolType, img, src, x1, y1, x2, y2 }; // Temporary element

@@ -27,7 +27,7 @@ const LandingPage = () => {
     e.preventDefault();
     setUserID(userIDRef.current.value);
     setRole(roleRef.current.value);
-    const data = { roomID, role };
+    const data = { roomID, role, userID };
     navigate("/whiteboard", { state: data });
     console.log("Redirected");
   };
@@ -120,7 +120,9 @@ const LandingPage = () => {
             ref={userIDRef}
             type="text"
             value={userID}
-            onChange={(e) => setUserID(e.target.value)}
+            onChange={(e) => 
+              setUserID(e.target.value)
+            }
             placeholder="Enter User ID"
             style={styles.input}
           />

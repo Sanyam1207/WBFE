@@ -1,16 +1,30 @@
 import { io } from "socket.io-client";
 import {
-  updateCursorPosition,
   removeCursorPosition,
+  updateCursorPosition,
 } from "../CursorOverlay/cursorSlice";
+import { clearAudioStream, setActiveAudioSource, setAudioStream } from "../store/audioSlice";
+import { setFile } from "../store/fileSlice";
+import { setAnswerFromAI } from "../store/questionSlice";
 import { store } from "../store/store";
 import { setElements, setMessages, setQuizAnswer, setSleepingStudent, updateElement } from "../Whiteboard/whiteboardSlice";
-import { clearAudioStream, setActiveAudioSource, setAudioStream } from "../store/audioSlice";
 
 let socket;
 
+function dataURLtoBlob(dataurl) {
+  const parts = dataurl.split(',');
+  const mime = parts[0].match(/:(.*?);/)[1];
+  const bstr = atob(parts[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new Blob([u8arr], { type: mime });
+}
+
 export const connectWithSocketServer = (roomID, userID) => {
-  socket = io("https://sih-whiteboardbackend.onrender.com");
+  socket = io("http://localhost:3003");
   console.log(`room ID from connect to socket : : ${roomID} : : ${userID}`);
 
   socket.on("connect", () => {
@@ -23,6 +37,11 @@ export const connectWithSocketServer = (roomID, userID) => {
     store.dispatch(setElements(elements)); // Set elements for the whiteboard
   });
 
+  socket.on("user-disconnected", ({ userID }) => {
+    // For instance, remove the user's cursor or show a notification
+    console.log(`User with ID ${userID} has disconnected.`);
+  });
+
   socket.on("element-update", (elementData) => {
     store.dispatch(updateElement(elementData)); // Update the whiteboard with new element
   });
@@ -32,7 +51,7 @@ export const connectWithSocketServer = (roomID, userID) => {
   });
 
   socket.on('student-sleeping', (userID) => {
-    console.log(`Student ID : : ${userID}`);
+    console.log(`\n\nStudent ID is sleeping : : : ${userID}`);
     store.dispatch(setSleepingStudent(userID))
 
     setTimeout(() => {
@@ -41,7 +60,7 @@ export const connectWithSocketServer = (roomID, userID) => {
   })
 
   socket.on("cursor-position", (cursorData) => {
-    store.dispatch(updateCursorPosition(cursorData)); // Update cursor position
+    store.dispatch(updateCursorPosition(cursorData));
   });
 
   socket.on("user-disconnected", (disconnectedUserId) => {
@@ -62,6 +81,28 @@ export const connectWithSocketServer = (roomID, userID) => {
       store.dispatch(setQuizAnswer(null))
     }, 1 * 15 * 500);
   })
+
+  socket.on('got-definition', (result) => {
+    console.log(result);
+
+    store.dispatch(setAnswerFromAI(result))
+  })
+
+
+  socket.on("file-rechieved", (fileName, fileType, fileData) => {
+    console.log("Received file:", fileName, fileType, fileData);
+    // Use fileData if available; otherwise, assume fileName is the data URL
+    const data = fileData || fileName;
+    const blob =
+      typeof data === "string"
+        ? dataURLtoBlob(data)
+        : new Blob([data], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    console.log("Generated blob URL:", url);
+    store.dispatch(setFile(url));
+  });
+
+
 
   socket.on('audioStream', ({ audioData, userID }) => {
     try {
@@ -91,7 +132,6 @@ export const connectWithSocketServer = (roomID, userID) => {
 };
 
 export const emitElementUpdate = (elementData, roomID) => {
-  console.log(elementData);
 
   socket.emit("element-update", { elementData, roomID });
 };
@@ -100,7 +140,7 @@ export const emitClearWhiteboard = (roomID) => {
   socket.emit("whiteboard-clear", roomID);
 };
 
-export const emitCursorPosition = (cursorData, roomID) => {
+export const emitCursorPosition = ({ cursorData, roomID }) => {
   socket.emit("cursor-position", { cursorData, roomID });
 };
 
@@ -120,9 +160,31 @@ export const quiz = ({ correctAnswer, roomID }) => {
   socket.emit('quiz', { correctAnswer, roomID })
 }
 
-export const emitAudioStream = ({audioData, roomID, userID}) => {
-  socket.emit('audioStream', { 
-    audioData, 
+export const emitAudioStream = ({ audioData, roomID, userID }) => {
+  socket.emit('audioStream', {
+    audioData,
     roomID,
     userID // Include user ID to identify the audio source
-  })}
+  })
+}
+
+export const emitQuestion = ({ userID, question }) => {
+  console.log("emit question trigerred !!", userID)
+  socket.emit('get-definition', { userID, question })
+}
+
+
+
+
+// --- New Exported Function for File Transfer ---
+export const emitFile = ({ roomID, fileName, fileType, fileData }) => {
+  const data = fileData || fileName;
+  const blob =
+    typeof data === "string"
+      ? dataURLtoBlob(data)
+      : new Blob([data], { type: "application/pdf" });
+  const url = URL.createObjectURL(blob);
+  console.log("Generated blob URL:", url);
+  store.dispatch(setFile(url));
+  socket.emit("file", { roomID, fileName, fileType, fileData });
+};
