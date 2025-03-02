@@ -43,11 +43,17 @@ export const connectWithSocketServer = (roomID, userID) => {
   });
 
   socket.on("element-update", (elementData) => {
-    store.dispatch(updateElement(elementData)); // Update the whiteboard with new element
+    
+    setTimeout(() => {
+      store.dispatch(updateElement(elementData)); // Update the whiteboard with new element
+    }, 500);
   });
 
   socket.on("whiteboard-clear", () => {
-    store.dispatch(setElements([])); // Clear the whiteboard
+    
+    setTimeout(() => {
+      store.dispatch(setElements([])); // Clear the whiteboard
+    }, 500);
   });
 
   socket.on('student-sleeping', (userID) => {
@@ -60,7 +66,9 @@ export const connectWithSocketServer = (roomID, userID) => {
   })
 
   socket.on("cursor-position", (cursorData) => {
+    setTimeout(() => {
     store.dispatch(updateCursorPosition(cursorData));
+    }, 500);
   });
 
   socket.on("user-disconnected", (disconnectedUserId) => {

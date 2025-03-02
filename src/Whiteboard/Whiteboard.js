@@ -149,7 +149,7 @@ const Whiteboard = ({ role, userID, roomID }) => {
             mediaRecorderRef.current.start();
             setTimeout(() => {
               mediaRecorderRef.current.stop();
-            }, 50);
+            }, 150);
           });
 
           // Initial start
@@ -233,7 +233,7 @@ const Whiteboard = ({ role, userID, roomID }) => {
           return newCount
         })
 
-      }, 1000000000000 * 10);
+      }, 1000 * 60 * 1);
 
       return () => clearInterval(popupInterval); // Cleanup interval on unmount
     }
