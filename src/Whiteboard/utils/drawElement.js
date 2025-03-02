@@ -13,7 +13,7 @@ const drawPencilElement = (context, element) => {
   context.fill(myPath);
 };
 
-const drawTextElement = (context, element, wordsPerLine = 30) => {
+const drawTextElement = (context, element, wordsPerLine = 15) => {
   context.textBaseline = "top";
   context.font = "15px sans-serif";
 
