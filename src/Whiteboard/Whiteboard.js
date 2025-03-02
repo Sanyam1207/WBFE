@@ -149,7 +149,7 @@ const Whiteboard = ({ role, userID, roomID }) => {
             mediaRecorderRef.current.start();
             setTimeout(() => {
               mediaRecorderRef.current.stop();
-            }, 50);
+            }, 150);
           });
 
           // Initial start
