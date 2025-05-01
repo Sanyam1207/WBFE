@@ -3,17 +3,24 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import rough from "roughjs/bundled/rough.esm";
 import { v4 as uuid } from "uuid";
-import ring from '.././resources/audio/ring.mp3';
+import ring from ".././resources/audio/ring.mp3";
 import CursorOverlay from "../CursorOverlay/CursorOverlay";
 import AiSearchPopup from "../components/AiSearchPopup";
 import PdfViewer from "../components/PdfViewer";
 import { actions, cursorPositions, toolTypes } from "../constants";
-import { emitAudioStream, emitCursorPosition, emitFile, emitMessages, emitStudentSleeping, quiz } from "../socketConn/socketConn";
+import {
+  emitAudioStream,
+  emitCursorPosition,
+  emitFile,
+  emitMessages,
+  emitStudentSleeping,
+  quiz,
+} from "../socketConn/socketConn";
 import { clearAudioStream } from "../store/audioSlice";
 import { clearFile } from "../store/fileSlice";
 import { store } from "../store/store";
 import Menu from "./Menu";
-import image from './image.png';
+import image from "./image.png";
 import {
   adjustElementCoordinates,
   adjustmentRequired,
@@ -25,22 +32,21 @@ import {
   updateElement,
   updatePencilElementWhenMoving,
 } from "./utils";
-import { setMessages, updateElement as updateElementInStore } from "./whiteboardSlice";
-
-
-
+import {
+  setMessages,
+  updateElement as updateElementInStore,
+} from "./whiteboardSlice";
 
 let emitCursor = true;
 let lastCursorPosition;
-
 
 const Whiteboard = ({ role, userID, roomID }) => {
   const canvasRef = useRef();
   const textAreaRef = useRef();
   if (role === "teacher") {
-    emitCursor = true
+    emitCursor = true;
   } else {
-    emitCursor = false
+    emitCursor = false;
   }
 
   // eslint-disable-next-line
@@ -48,7 +54,7 @@ const Whiteboard = ({ role, userID, roomID }) => {
   const file = useSelector((state) => state.file.file);
   // eslint-disable-next-line
   const toolType = useSelector((state) => state.whiteboard.tool);
-  const [AISearchOpen, setAISearchOpen] = useState(false)
+  const [AISearchOpen, setAISearchOpen] = useState(false);
   // eslint-disable-next-line
   const elements = useSelector((state) => state.whiteboard.elements);
   // eslint-disable-next-line
@@ -56,40 +62,38 @@ const Whiteboard = ({ role, userID, roomID }) => {
   const messages = useSelector((state) => state.whiteboard.messages);
   const quizAnswer = useSelector((state) => state.whiteboard.quizAnswer);
   const [pollResult, setPollResult] = useState(false);
-  const [iscorrect, setIsCorrect] = useState(null)
-  const [resultPoll, setResultPoll] = useState('')
+  const [iscorrect, setIsCorrect] = useState(null);
+  const [resultPoll, setResultPoll] = useState("");
   const [mousePosition, setMousePosition] = useState({
     x: 0,
-    y: 0
-  })
-  const [openImageModel, setOpenImageModel] = useState()
-  const [imageUrl, setImageUrl] = useState()
-  const [input, setInput] = useState('')
-  const [showPdf, setShowPdf] = useState(true)
+    y: 0,
+  });
+  const [openImageModel, setOpenImageModel] = useState();
+  const [imageUrl, setImageUrl] = useState();
+  const [input, setInput] = useState("");
+  const [showPdf, setShowPdf] = useState(true);
 
   const [action, setAction] = useState(null);
   // eslint-disable-next-line
   const [wakeupIndex, setWakeupIndex] = useState(0);
   const [openChatModal, setOpenChatModal] = useState(false);
-  const [poleDialogue, setPoleDialogue] = useState(false)
+  const [poleDialogue, setPoleDialogue] = useState(false);
   // eslint-disable-next-line
-  const [pollAnswer, setPoleAnswer] = useState(null)
+  const [pollAnswer, setPoleAnswer] = useState(null);
   const [selectedElement, setSelectedElement] = useState(null);
-  const [showPopup, setShowPopup] = useState(false)
+  const [showPopup, setShowPopup] = useState(false);
   const dispatch = useDispatch();
-  const audioRef = useRef(null)
-
-
-
+  const audioRef = useRef(null);
 
   const audioStreamRef = useRef(null);
   const mediaRecorderRef = useRef(null);
 
   // Select audio-related state from Redux
   // eslint-disable-next-line
-  const activeAudioSource = useSelector(state => state.audioStreaming.activeAudioSource);
-  const audioStream = useSelector(state => state.audioStreaming.audioStream);
-
+  const activeAudioSource = useSelector(
+    (state) => state.audioStreaming.activeAudioSource
+  );
+  const audioStream = useSelector((state) => state.audioStreaming.audioStream);
 
   useEffect(() => {
     const handleSpacebar = (e) => {
@@ -110,15 +114,14 @@ const Whiteboard = ({ role, userID, roomID }) => {
     // eslint-disable-next-line
   }, [showPopup]);
 
-
   useEffect(() => {
     // Audio streaming setup for teacher
-    if (role === 'teacher') {
+    if (role === "teacher") {
       const startAudioCapture = async () => {
         try {
           const stream = await navigator.mediaDevices.getUserMedia({
             audio: true,
-            video: false
+            video: false,
           });
 
           audioStreamRef.current = stream;
@@ -126,9 +129,12 @@ const Whiteboard = ({ role, userID, roomID }) => {
 
           const audioChunks = [];
 
-          mediaRecorderRef.current.addEventListener("dataavailable", (event) => {
-            audioChunks.push(event.data);
-          });
+          mediaRecorderRef.current.addEventListener(
+            "dataavailable",
+            (event) => {
+              audioChunks.push(event.data);
+            }
+          );
 
           mediaRecorderRef.current.addEventListener("stop", () => {
             const audioBlob = new Blob(audioChunks);
@@ -141,7 +147,7 @@ const Whiteboard = ({ role, userID, roomID }) => {
               emitAudioStream({
                 audioData: base64String,
                 roomID,
-                userID
+                userID,
               });
             };
 
@@ -158,7 +164,7 @@ const Whiteboard = ({ role, userID, roomID }) => {
             mediaRecorderRef.current.stop();
           }, 100);
         } catch (error) {
-          console.error('Error setting up audio capture:', error);
+          console.error("Error setting up audio capture:", error);
         }
       };
 
@@ -168,7 +174,7 @@ const Whiteboard = ({ role, userID, roomID }) => {
     // Cleanup function
     return () => {
       if (audioStreamRef.current) {
-        audioStreamRef.current.getTracks().forEach(track => track.stop());
+        audioStreamRef.current.getTracks().forEach((track) => track.stop());
       }
       if (mediaRecorderRef.current) {
         mediaRecorderRef.current.stop();
@@ -179,11 +185,11 @@ const Whiteboard = ({ role, userID, roomID }) => {
 
   // Optional: Audio playback for students
   useEffect(() => {
-    if (role === 'student' && audioStream) {
+    if (role === "student" && audioStream) {
       const audio = new Audio(audioStream);
-      audio.play().catch(error => {
+      audio.play().catch((error) => {
         if (error.name !== "AbortError") {
-          console.error('Error playing audio:', error);
+          console.error("Error playing audio:", error);
           dispatch(clearAudioStream());
         }
       });
@@ -195,26 +201,13 @@ const Whiteboard = ({ role, userID, roomID }) => {
     }
   }, [audioStream, role, dispatch]);
 
-
-
-
-
-
-
-
-
-
-
-
-
   const doNotSendData = () => {
-    setWakeupIndex(0)
+    setWakeupIndex(0);
     if (audioRef.current) {
-      resetAudio()
+      resetAudio();
     }
-    setShowPopup(false)
-  }
-
+    setShowPopup(false);
+  };
 
   useEffect(() => {
     if (role === "student") {
@@ -223,22 +216,19 @@ const Whiteboard = ({ role, userID, roomID }) => {
         setWakeupIndex((prev) => {
           const newCount = prev + 1;
           if (newCount === 3) {
-
-            audioRef.current = new Audio(ring)
-            playAudio()
+            audioRef.current = new Audio(ring);
+            playAudio();
             console.log(userID);
 
-            emitStudentSleeping(userID, roomID)
+            emitStudentSleeping(userID, roomID);
           }
-          return newCount
-        })
-
+          return newCount;
+        });
       }, 1000 * 60 * 1);
 
       return () => clearInterval(popupInterval); // Cleanup interval on unmount
     }
   }, [role, roomID, userID]);
-
 
   useEffect(() => {
     if (file) {
@@ -262,14 +252,11 @@ const Whiteboard = ({ role, userID, roomID }) => {
     }
   }, [file, dispatch]);
 
-
-
   useLayoutEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
 
     const roughCanvas = rough.canvas(canvas);
 
@@ -277,7 +264,6 @@ const Whiteboard = ({ role, userID, roomID }) => {
       drawElement({ roughCanvas, context: ctx, element });
     });
   }, [elements]);
-
 
   const playAudio = () => {
     if (audioRef.current) {
@@ -295,7 +281,7 @@ const Whiteboard = ({ role, userID, roomID }) => {
   const handleMouseDown = (event) => {
     const { clientX, clientY } = event;
 
-    const adjustedY = clientY
+    const adjustedY = clientY;
 
     if (selectedElement && action === actions.WRITING) {
       return;
@@ -316,7 +302,6 @@ const Whiteboard = ({ role, userID, roomID }) => {
 
         console.log(clientY);
         console.log(adjustedY);
-
 
         setAction(actions.DRAWING);
         setSelectedElement(element);
@@ -340,8 +325,8 @@ const Whiteboard = ({ role, userID, roomID }) => {
       }
 
       case toolTypes.IMAGE: {
-        setOpenImageModel(true)
-        setMousePosition({ x: clientX, y: clientY })
+        setOpenImageModel(true);
+        setMousePosition({ x: clientX, y: clientY });
         break;
       }
 
@@ -352,7 +337,8 @@ const Whiteboard = ({ role, userID, roomID }) => {
           element &&
           (element.type === toolTypes.RECTANGLE ||
             element.type === toolTypes.TEXT ||
-            element.type === toolTypes.LINE || element.type === toolTypes.IMAGE)
+            element.type === toolTypes.LINE ||
+            element.type === toolTypes.IMAGE)
         ) {
           setAction(
             element.position === cursorPositions.INSIDE
@@ -378,11 +364,10 @@ const Whiteboard = ({ role, userID, roomID }) => {
       }
 
       default: {
-        return
+        return;
       }
     }
   };
-
 
   const handleMouseUp = () => {
     const selectedElementIndex = elements.findIndex(
@@ -406,7 +391,8 @@ const Whiteboard = ({ role, userID, roomID }) => {
               y2,
               type: elements[selectedElementIndex].type,
             },
-            elements, roomID
+            elements,
+            roomID
           );
         }
       }
@@ -421,13 +407,13 @@ const Whiteboard = ({ role, userID, roomID }) => {
 
     lastCursorPosition = {
       cursorData: { x: clientX, y: clientY },
-      roomID: roomID
+      roomID: roomID,
     };
 
     if (emitCursor) {
       emitCursorPosition({
         cursorData: { x: clientX, y: clientY },
-        roomID: roomID
+        roomID: roomID,
       });
 
       setTimeout(() => {
@@ -451,7 +437,8 @@ const Whiteboard = ({ role, userID, roomID }) => {
             y2: clientY,
             type: elements[index].type,
           },
-          elements, roomID
+          elements,
+          roomID
         );
       }
     }
@@ -512,7 +499,8 @@ const Whiteboard = ({ role, userID, roomID }) => {
             index,
             text,
           },
-          elements, roomID
+          elements,
+          roomID
         );
       }
     }
@@ -545,7 +533,8 @@ const Whiteboard = ({ role, userID, roomID }) => {
             id: selectedElement.id,
             index: selectedElementIndex,
           },
-          elements, roomID
+          elements,
+          roomID
         );
       }
     }
@@ -559,7 +548,8 @@ const Whiteboard = ({ role, userID, roomID }) => {
     if (index !== -1) {
       updateElement(
         { id, x1, y1, type, text: event.target.value, index },
-        elements, roomID
+        elements,
+        roomID
       );
 
       setAction(null);
@@ -568,40 +558,37 @@ const Whiteboard = ({ role, userID, roomID }) => {
   };
 
   const handleSendChat = () => {
-    const dataToSend = { message: input, userID: userID }
-    const messageCopy = [...messages, dataToSend]
+    const dataToSend = { message: input, userID: userID };
+    const messageCopy = [...messages, dataToSend];
     console.log(messageCopy);
 
-    store.dispatch(setMessages(messageCopy))
-    emitMessages({ userID, message: input, roomID, messageCopy })
-  }
+    store.dispatch(setMessages(messageCopy));
+    emitMessages({ userID, message: input, roomID, messageCopy });
+  };
 
   const manageQuizClick = (correctAnswer) => {
-    console.log('quiz clicked');
+    console.log("quiz clicked");
 
-    setPoleAnswer(correctAnswer)
-    quiz({ correctAnswer, roomID })
-    setPoleDialogue(false)
-  }
+    setPoleAnswer(correctAnswer);
+    quiz({ correctAnswer, roomID });
+    setPoleDialogue(false);
+  };
 
   const handleStudentAnswer = (selectedAnswer) => {
-
     if (selectedAnswer === quizAnswer) {
-      setResultPoll("Congrats You Have Answered Correctly")
+      setResultPoll("Congrats You Have Answered Correctly");
       console.log(`is correct ${iscorrect}`);
-
     } else {
-      setResultPoll("Oops wrong answer, better luck next time")
+      setResultPoll("Oops wrong answer, better luck next time");
     }
-    setPollResult(true)
+    setPollResult(true);
 
     setTimeout(() => {
-      setPollResult(false)
-      setResultPoll("")
-      setIsCorrect(null)
+      setPollResult(false);
+      setResultPoll("");
+      setIsCorrect(null);
     }, 7000);
-  }
-
+  };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -617,17 +604,325 @@ const Whiteboard = ({ role, userID, roomID }) => {
         roomID,
         fileName: file.name,
         fileType: file.type,
-        fileData: evt.target.result,  // Data URL string
+        fileData: evt.target.result, // Data URL string
       });
     };
-
   };
 
-
-
   return (
+    //     <>
+    //       {role === 'teacher' && (
+    //         <>
+    //           <Menu roomID={roomID} />
+    //           {action === actions.WRITING ? (
+    //             <textarea
+    //               ref={textAreaRef}
+    //               onBlur={handleTextareaBlur}
+    //               style={{
+    //                 position: "absolute",
+    //                 top: selectedElement.y1 - 3,
+    //                 left: selectedElement.x1,
+    //                 font: "12px sans-serif",
+    //                 margin: 0,
+    //                 padding: 0,
+    //                 border: 0,
+    //                 outline: 0,
+    //                 resize: "auto",
+    //                 overflow: "visible",
+    //                 whiteSpace: "pre",
+    //                 background: "transparent",
+    //               }}
+    //             />
+    //           ) : null}
+    //         </>
+    //       )}
+
+    //       {openImageModel && (
+    //         <div
+    //           style={{
+    //             position: "absolute",
+    //             top: '50%',
+    //             left: '50%',
+    //             background: "white",
+    //             padding: "20px",
+    //             border: "1px solid black",
+    //             display: "flex",
+    //             flexDirection: "column",
+    //             alignItems: "center",
+    //             zIndex: 1000,
+    //           }}
+    //         >
+    //           <input
+    //             type="text"
+    //             placeholder="Enter image URL"
+    //             value={imageUrl || ""}
+    //             onChange={(e) => setImageUrl(e.target.value)}
+    //             style={{ marginBottom: "10px", width: "200px", padding: "5px" }}
+    //           />
+    //           <div>
+    //             <button
+    //               onClick={(e) => {
+    //                 if (imageUrl) {
+    //                   // Add the image element to the canvas
+    //                   const element = createElement({
+    //                     x1: mousePosition.x,
+    //                     y1: mousePosition.y,
+    //                     x2: mousePosition.x + 600,
+    //                     y2: mousePosition.y + 600,
+    //                     toolType: toolTypes.IMAGE,
+    //                     id: uuid(),
+    //                     src: imageUrl,
+    //                     roomID
+    //                   });
+
+    //                   setSelectedElement(element);
+    //                   dispatch(updateElementInStore(element));
+    //                 }
+    //                 setOpenImageModel(false);
+    //                 setImageUrl(""); // Clear input field
+    //               }}
+    //               style={{ marginRight: "10px" }}
+    //             >
+    //               Add
+    //             </button>
+    //             <button onClick={() => setOpenImageModel(false)}>Cancel</button>
+    //           </div>
+    //         </div>
+    //       )}
+
+    //       {role === 'student' && <CursorOverlay />}
+
+    //       {role === 'student' && showPopup && (
+    //         <div style={{
+
+    //           border: '2px solid black',
+    //           width: '200px',
+    //           position: 'absolute',
+    //           top: '80vh',
+    //           right: '0vh',
+    //           borderRadius: '20px',
+    //           display: 'flex',
+    //           flexDirection: 'column',
+    //           backgroundColor: '#787878',
+    //           color: '#fff',
+    //           justifyContent: 'center',
+    //           alignItems: 'center'
+    //         }}>
+    //           <button style={{
+    //             height: '100%',
+    //             width: '100%',
+    //           }} className="awake-button"
+    //             onClick={() => { doNotSendData() }}
+    //           >
+    //             <h2>Are You Awake ?</h2>
+    //             <p>Press SPACE to confirm</p>
+    //           </button>
+    //         </div>
+    //       )}
+
+    //       <canvas
+    //         onMouseDown={handleMouseDown}
+    //         onMouseUp={handleMouseUp}
+    //         onMouseMove={handleMouseMove}
+    //         ref={canvasRef}
+    //         className={moveCanvas}
+    //         width={window.innerWidth}
+    //         height={window.innerHeight}
+    //         id="canvas"
+    //       />
+
+    //       {role === 'teacher' && sleptStudent && (
+    //         <div
+    //           style={{
+    //             position: 'absolute',
+    //             fontSize: '2.2rem',
+    //             bottom: 20,
+    //             right: 10,
+    //             zIndex: 10
+    //           }}
+    //         >
+    //           {sleptStudent} is sleeping
+    //         </div>
+    //       )}
+
+    //       {openChatModal && (
+    //         <div className="chat-container">
+    //           <div className="chat-display">
+    //             {messages.map((msg, index) => (
+    //               <div key={index} className="chat-message">
+    //                 from : {msg.userID}  : : {msg.message}
+    //               </div>
+    //             ))}
+    //           </div>
+    //           <div className="chat-input-container">
+    //             <input
+    //               type="text"
+    //               value={input}
+    //               onChange={(e) => setInput(e.target.value)}
+    //               placeholder="Type a message..."
+    //               className="chat-input"
+    //             />
+    //             <button onClick={() => { handleSendChat() }} className="chat-send-button">
+    //               Send
+    //             </button>
+    //             <button className="chat-send-button" onClick={() => { setOpenChatModal(false) }}>
+    //               Close
+    //             </button>
+    //           </div>
+    //         </div>
+    //       )}
+    //       {
+    //         role === 'teacher' && (
+    //           <button onClick={() => setPoleDialogue(true)} style={{
+    //             right: 120
+    //           }} className="chatbutton">
+    //             conduct poll
+    //           </button>
+    //         )
+    //       }
+
+    //       {
+    //         role === 'teacher' && poleDialogue && (
+    //           <div className="papa-button-container">
+    //             <h3>Please select the correct answer</h3>
+    //             <div className="button-container">
+    //               <button className="button" onClick={() => { manageQuizClick(1) }}>Option 1</button>
+    //               <button className="button" onClick={() => { manageQuizClick(2) }}>Option 2</button>
+    //               <button className="button" onClick={() => { manageQuizClick(3) }}>Option 3</button>
+    //               <button className="button" onClick={() => { manageQuizClick(4) }}>Option 4</button>
+    //             </div>
+    //           </div>
+
+    //         )
+    //       }
+
+    //       {
+    //         role === 'student' && quizAnswer && (
+    //           <div className="papa-button-container">
+    //             <h3>Please select the correct answer</h3>
+
+    //             {
+    //               pollResult && (
+    //                 <div>
+    //                   <h2>
+    //                     {resultPoll}
+    //                   </h2>
+    //                 </div>
+    //               )
+    //             }
+
+    //             <div className="button-container">
+    //               <button className="button" onClick={() => { handleStudentAnswer(1) }}>Option 1</button>
+    //               <button className="button" onClick={() => { handleStudentAnswer(2) }}>Option 2</button>
+    //               <button className="button" onClick={() => { handleStudentAnswer(3) }}>Option 3</button>
+    //               <button className="button" onClick={() => { handleStudentAnswer(4) }}>Option 4</button>
+    //             </div>
+    //           </div>
+    //         )
+    //       }
+
+    //       <button onClick={() => setAISearchOpen(true)}
+    //         style={{
+    //           padding: 4,
+    //           borderRadius: 5,
+    //           position: 'absolute',
+    //           top: 4,
+    //           left: 10,
+    //           margin: 0
+    //         }}
+    //       ><img src={image} alt="crashed" style={{
+    //         height: '30px',
+    //         width: 'auto',
+    //       }} /></button>
+    //       {AISearchOpen && <AiSearchPopup userID={userID} onClose={setAISearchOpen} />}
+
+    //       <button onClick={() => setOpenChatModal(true)} className="chatbutton">
+    //         Open Chat
+    //       </button>
+
+    //       {role === 'teacher' && (<div style={{ position: 'absolute', top: 5, left: 60 }}>
+    //         {/*
+    //         1. Hide the actual file input
+    //         2. Style the label as your “sexy button”
+    //       */}
+    //         <input
+    //           id="file-upload"
+    //           type="file"
+    //           style={{ display: 'none' }}
+    //           onChange={handleFileChange}
+    //         />
+    //         <label
+    //           htmlFor="file-upload"
+    //           style={{
+    //             display: 'inline-block',
+    //             backgroundColor: '#36408a', // Pink accent
+    //             color: '#fff',
+    //             padding: '12px 20px',
+    //             fontSize: '16px',
+    //             fontWeight: 'bold',
+    //             borderRadius: '6px',
+    //             cursor: 'pointer',
+    //             boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+    //             transition: 'background-color 0.3s ease'
+    //           }}
+    //           onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#141c59')}
+    //           onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#595e91')}
+    //         >
+    //           Upload File
+    //         </label>
+    //       </div>)}
+
+    //       <div
+    //   onClick={() => setShowPdf(true)}
+    //   style={{
+    //     position: 'absolute',
+    //     top: 5,
+    //     left: 200,
+    //     width: '40px',
+    //     height: '40px',
+    //     display: 'flex',
+    //     alignItems: 'center',
+    //     justifyContent: 'center',
+    //     background: 'linear-gradient(45deg, #FF4081, #E91E63)',
+    //     borderRadius: '50%',
+    //     cursor: 'pointer',
+    //     boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+    //     transition: 'transform 0.2s, box-shadow 0.2s'
+    //   }}
+    //   onMouseEnter={e => {
+    //     e.currentTarget.style.transform = 'scale(1.1)';
+    //     e.currentTarget.style.boxShadow = '0 6px 12px rgba(0, 0, 0, 0.4)';
+    //   }}
+    //   onMouseLeave={e => {
+    //     e.currentTarget.style.transform = 'scale(1)';
+    //     e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
+    //   }}
+    // >
+    //   <Package2Icon style={{ color: '#fff', fontSize: '24px' }} />
+    // </div>
+
+    //       {showPdf && (<div style={{
+    //         position: 'absolute',
+    //         bottom: 10,
+    //         right: 10,
+    //         display: 'flex',
+    //         padding: 10,
+    //         backgroundColor: '#fff',
+
+    //       }}>
+    //         <button onClick={() => {setShowPdf(false)}} style={{
+    //           backgroundColor: '#303038',
+    //           color: '#fff',
+    //         }}>
+    //           X
+    //         </button>
+    //         <PdfViewer />
+    //       </div>)}
+
+    //     </>
+
     <>
-      {role === 'teacher' && (
+      {role === "teacher" && (
         <>
           <Menu roomID={roomID} />
           {action === actions.WRITING ? (
@@ -657,8 +952,8 @@ const Whiteboard = ({ role, userID, roomID }) => {
         <div
           style={{
             position: "absolute",
-            top: '50%',
-            left: '50%',
+            top: "50%",
+            left: "50%",
             background: "white",
             padding: "20px",
             border: "1px solid black",
@@ -688,7 +983,7 @@ const Whiteboard = ({ role, userID, roomID }) => {
                     toolType: toolTypes.IMAGE,
                     id: uuid(),
                     src: imageUrl,
-                    roomID
+                    roomID,
                   });
 
                   setSelectedElement(element);
@@ -706,29 +1001,34 @@ const Whiteboard = ({ role, userID, roomID }) => {
         </div>
       )}
 
-      {role === 'student' && <CursorOverlay />}
+      {role === "student" && <CursorOverlay />}
 
-      {role === 'student' && showPopup && (
-        <div style={{
-
-          border: '2px solid black',
-          width: '200px',
-          position: 'absolute',
-          top: '80vh',
-          right: '0vh',
-          borderRadius: '20px',
-          display: 'flex',
-          flexDirection: 'column',
-          backgroundColor: '#787878',
-          color: '#fff',
-          justifyContent: 'center',
-          alignItems: 'center'
-        }}>
-          <button style={{
-            height: '100%',
-            width: '100%',
-          }} className="awake-button"
-            onClick={() => { doNotSendData() }}
+      {role === "student" && showPopup && (
+        <div
+          style={{
+            border: "2px solid black",
+            width: "200px",
+            position: "absolute",
+            top: "80vh",
+            right: "0vh",
+            borderRadius: "20px",
+            display: "flex",
+            flexDirection: "column",
+            backgroundColor: "#787878",
+            color: "#fff",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <button
+            style={{
+              height: "100%",
+              width: "100%",
+            }}
+            className="awake-button"
+            onClick={() => {
+              doNotSendData();
+            }}
           >
             <h2>Are You Awake ?</h2>
             <p>Press SPACE to confirm</p>
@@ -747,14 +1047,14 @@ const Whiteboard = ({ role, userID, roomID }) => {
         id="canvas"
       />
 
-      {role === 'teacher' && sleptStudent && (
+      {role === "teacher" && sleptStudent && (
         <div
           style={{
-            position: 'absolute',
-            fontSize: '2.2rem',
+            position: "absolute",
+            fontSize: "2.2rem",
             bottom: 20,
             right: 10,
-            zIndex: 10
+            zIndex: 10,
           }}
         >
           {sleptStudent} is sleeping
@@ -766,7 +1066,7 @@ const Whiteboard = ({ role, userID, roomID }) => {
           <div className="chat-display">
             {messages.map((msg, index) => (
               <div key={index} className="chat-message">
-                from : {msg.userID}  : : {msg.message}
+                from : {msg.userID} : : {msg.message}
               </div>
             ))}
           </div>
@@ -778,163 +1078,240 @@ const Whiteboard = ({ role, userID, roomID }) => {
               placeholder="Type a message..."
               className="chat-input"
             />
-            <button onClick={() => { handleSendChat() }} className="chat-send-button">
+            <button
+              onClick={() => {
+                handleSendChat();
+              }}
+              className="chat-send-button"
+            >
               Send
             </button>
-            <button className="chat-send-button" onClick={() => { setOpenChatModal(false) }}>
+            <button
+              className="chat-send-button"
+              onClick={() => {
+                setOpenChatModal(false);
+              }}
+            >
               Close
             </button>
           </div>
         </div>
       )}
-      {
-        role === 'teacher' && (
-          <button onClick={() => setPoleDialogue(true)} style={{
-            right: 120
-          }} className="chatbutton">
-            conduct poll
-          </button>
-        )
-      }
+      {role === "teacher" && (
+        <button
+          onClick={() => setPoleDialogue(true)}
+          style={{
+            right: 120,
+          }}
+          className="chatbutton"
+        >
+          conduct poll
+        </button>
+      )}
 
-      {
-        role === 'teacher' && poleDialogue && (
-          <div className="papa-button-container">
-            <h3>Please select the correct answer</h3>
-            <div className="button-container">
-              <button className="button" onClick={() => { manageQuizClick(1) }}>Option 1</button>
-              <button className="button" onClick={() => { manageQuizClick(2) }}>Option 2</button>
-              <button className="button" onClick={() => { manageQuizClick(3) }}>Option 3</button>
-              <button className="button" onClick={() => { manageQuizClick(4) }}>Option 4</button>
-            </div>
+      {role === "teacher" && poleDialogue && (
+        <div className="papa-button-container">
+          <h3>Please select the correct answer</h3>
+          <div className="button-container">
+            <button
+              className="button"
+              onClick={() => {
+                manageQuizClick(1);
+              }}
+            >
+              Option 1
+            </button>
+            <button
+              className="button"
+              onClick={() => {
+                manageQuizClick(2);
+              }}
+            >
+              Option 2
+            </button>
+            <button
+              className="button"
+              onClick={() => {
+                manageQuizClick(3);
+              }}
+            >
+              Option 3
+            </button>
+            <button
+              className="button"
+              onClick={() => {
+                manageQuizClick(4);
+              }}
+            >
+              Option 4
+            </button>
           </div>
+        </div>
+      )}
 
-        )
-      }
+      {role === "student" && quizAnswer && (
+        <div className="papa-button-container">
+          <h3>Please select the correct answer</h3>
 
-      {
-        role === 'student' && quizAnswer && (
-          <div className="papa-button-container">
-            <h3>Please select the correct answer</h3>
-
-            {
-              pollResult && (
-                <div>
-                  <h2>
-                    {resultPoll}
-                  </h2>
-                </div>
-              )
-            }
-
-            <div className="button-container">
-              <button className="button" onClick={() => { handleStudentAnswer(1) }}>Option 1</button>
-              <button className="button" onClick={() => { handleStudentAnswer(2) }}>Option 2</button>
-              <button className="button" onClick={() => { handleStudentAnswer(3) }}>Option 3</button>
-              <button className="button" onClick={() => { handleStudentAnswer(4) }}>Option 4</button>
+          {pollResult && (
+            <div>
+              <h2>{resultPoll}</h2>
             </div>
-          </div>
-        )
-      }
+          )}
 
-      <button onClick={() => setAISearchOpen(true)}
+          <div className="button-container">
+            <button
+              className="button"
+              onClick={() => {
+                handleStudentAnswer(1);
+              }}
+            >
+              Option 1
+            </button>
+            <button
+              className="button"
+              onClick={() => {
+                handleStudentAnswer(2);
+              }}
+            >
+              Option 2
+            </button>
+            <button
+              className="button"
+              onClick={() => {
+                handleStudentAnswer(3);
+              }}
+            >
+              Option 3
+            </button>
+            <button
+              className="button"
+              onClick={() => {
+                handleStudentAnswer(4);
+              }}
+            >
+              Option 4
+            </button>
+          </div>
+        </div>
+      )}
+
+      <button
+        onClick={() => setAISearchOpen(true)}
         style={{
           padding: 4,
           borderRadius: 5,
-          position: 'absolute',
+          position: "absolute",
           top: 4,
           left: 10,
-          margin: 0
+          margin: 0,
         }}
-      ><img src={image} alt="crashed" style={{
-        height: '30px',
-        width: 'auto',
-      }} /></button>
-      {AISearchOpen && <AiSearchPopup userID={userID} onClose={setAISearchOpen} />}
+      >
+        <img
+          src={image}
+          alt="crashed"
+          style={{
+            height: "30px",
+            width: "auto",
+          }}
+        />
+      </button>
+      {AISearchOpen && (
+        <AiSearchPopup userID={userID} onClose={setAISearchOpen} />
+      )}
 
       <button onClick={() => setOpenChatModal(true)} className="chatbutton">
         Open Chat
       </button>
 
-      {role === 'teacher' && (<div style={{ position: 'absolute', top: 5, left: 60 }}>
-        {/* 
-        1. Hide the actual file input 
-        2. Style the label as your “sexy button”
-      */}
-        <input
-          id="file-upload"
-          type="file"
-          style={{ display: 'none' }}
-          onChange={handleFileChange}
-        />
-        <label
-          htmlFor="file-upload"
+      {role === "teacher" && (
+        <div style={{ position: "absolute", top: 5, left: 60 }}>
+          <input
+            id="file-upload"
+            type="file"
+            style={{ display: "none" }}
+            onChange={handleFileChange}
+          />
+          <label
+            htmlFor="file-upload"
+            style={{
+              display: "inline-block",
+              backgroundColor: "#36408a",
+              color: "#fff",
+              padding: "12px 20px",
+              fontSize: "16px",
+              fontWeight: "bold",
+              borderRadius: "6px",
+              cursor: "pointer",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+              transition: "background-color 0.3s ease",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor = "#141c59")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = "#595e91")
+            }
+          >
+            Upload File
+          </label>
+        </div>
+      )}
+
+      <div
+        onClick={() => setShowPdf(true)}
+        style={{
+          position: "absolute",
+          top: 5,
+          left: 200,
+          width: "40px",
+          height: "40px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "linear-gradient(45deg, #FF4081, #E91E63)",
+          borderRadius: "50%",
+          cursor: "pointer",
+          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.3)",
+          transition: "transform 0.2s, box-shadow 0.2s",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = "scale(1.1)";
+          e.currentTarget.style.boxShadow = "0 6px 12px rgba(0, 0, 0, 0.4)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = "scale(1)";
+          e.currentTarget.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.3)";
+        }}
+      >
+        <Package2Icon style={{ color: "#fff", fontSize: "24px" }} />
+      </div>
+
+      {showPdf && (
+        <div
           style={{
-            display: 'inline-block',
-            backgroundColor: '#36408a', // Pink accent
-            color: '#fff',
-            padding: '12px 20px',
-            fontSize: '16px',
-            fontWeight: 'bold',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
-            transition: 'background-color 0.3s ease'
+            position: "absolute",
+            bottom: 10,
+            right: 10,
+            display: "flex",
+            padding: 10,
+            backgroundColor: "#fff",
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#141c59')}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#595e91')}
         >
-          Upload File
-        </label>
-      </div>)}
-
-      <div 
-  onClick={() => setShowPdf(true)}
-  style={{
-    position: 'absolute',
-    top: 5,
-    left: 200,
-    width: '40px',
-    height: '40px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'linear-gradient(45deg, #FF4081, #E91E63)',
-    borderRadius: '50%',
-    cursor: 'pointer',
-    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
-    transition: 'transform 0.2s, box-shadow 0.2s'
-  }}
-  onMouseEnter={e => {
-    e.currentTarget.style.transform = 'scale(1.1)';
-    e.currentTarget.style.boxShadow = '0 6px 12px rgba(0, 0, 0, 0.4)';
-  }}
-  onMouseLeave={e => {
-    e.currentTarget.style.transform = 'scale(1)';
-    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
-  }}
->
-  <Package2Icon style={{ color: '#fff', fontSize: '24px' }} />
-</div>
-
-      {showPdf && (<div style={{
-        position: 'absolute',
-        bottom: 10,
-        right: 10,
-        display: 'flex',
-        padding: 10,
-        backgroundColor: '#fff',
-
-      }}>
-        <button onClick={() => {setShowPdf(false)}} style={{
-          backgroundColor: '#303038',
-          color: '#fff',
-        }}>
-          X
-        </button>
-        <PdfViewer />
-      </div>)}
-
+          <button
+            onClick={() => {
+              setShowPdf(false);
+            }}
+            style={{
+              backgroundColor: "#303038",
+              color: "#fff",
+            }}
+          >
+            X
+          </button>
+          <PdfViewer />
+        </div>
+      )}
     </>
   );
 };
