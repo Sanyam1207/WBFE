@@ -55,6 +55,8 @@ const Whiteboard = ({ role, userID, roomID }) => {
   // eslint-disable-next-line
   const toolType = useSelector((state) => state.whiteboard.tool);
   const [AISearchOpen, setAISearchOpen] = useState(false);
+  const selectedColor = useSelector((state) => state.whiteboard.selectedColor);
+
   // eslint-disable-next-line
   const elements = useSelector((state) => state.whiteboard.elements);
   // eslint-disable-next-line
@@ -260,7 +262,10 @@ const Whiteboard = ({ role, userID, roomID }) => {
 
     const roughCanvas = rough.canvas(canvas);
 
+    console.log("Rendering elements:", elements.length);
+
     elements.forEach((element) => {
+
       drawElement({ roughCanvas, context: ctx, element });
     });
   }, [elements]);
@@ -290,7 +295,8 @@ const Whiteboard = ({ role, userID, roomID }) => {
     switch (toolType) {
       case toolTypes.RECTANGLE:
       case toolTypes.LINE:
-      case toolTypes.PENCIL: {
+      case toolTypes.PENCIL:
+      case toolTypes.CIRCLE: {
         const element = createElement({
           x1: clientX,
           y1: adjustedY,
@@ -298,6 +304,7 @@ const Whiteboard = ({ role, userID, roomID }) => {
           y2: adjustedY,
           toolType,
           id: uuid(),
+          color: selectedColor, // Pass the selected color
         });
 
         console.log(clientY);
@@ -316,6 +323,7 @@ const Whiteboard = ({ role, userID, roomID }) => {
           y2: clientY,
           toolType,
           id: uuid(),
+          color: selectedColor, // Pass the selected color
         });
 
         setAction(actions.WRITING);
@@ -381,6 +389,10 @@ const Whiteboard = ({ role, userID, roomID }) => {
             elements[selectedElementIndex]
           );
 
+          // Get the current color from the element before adjustment
+          const currentColor = elements[selectedElementIndex].color;
+          console.log("Element color before adjustment:", currentColor);
+
           updateElement(
             {
               id: selectedElement.id,
@@ -390,6 +402,7 @@ const Whiteboard = ({ role, userID, roomID }) => {
               y1,
               y2,
               type: elements[selectedElementIndex].type,
+              color: currentColor // Preserve the color during adjustment
             },
             elements,
             roomID
@@ -402,8 +415,14 @@ const Whiteboard = ({ role, userID, roomID }) => {
     setSelectedElement(null);
   };
 
+  // The issue is in the handleMouseMove function where the color isn't being preserved
+  // Here's the fix for your Whiteboard.js file:
+
   const handleMouseMove = (event) => {
     const { clientX, clientY } = event;
+
+    // Get the current selected color from the Redux store to ensure we always have it
+    const selectedColor = store.getState().whiteboard.selectedColor || "#000000";
 
     lastCursorPosition = {
       cursorData: { x: clientX, y: clientY },
@@ -427,6 +446,13 @@ const Whiteboard = ({ role, userID, roomID }) => {
       const index = elements.findIndex((el) => el.id === selectedElement.id);
 
       if (index !== -1) {
+
+        const elementColor = elements[index].color ||
+          selectedElement.color ||
+          store.getState().whiteboard.selectedColor ||
+          '#000000';
+
+        // Make sure we're passing the color from the selected element
         updateElement(
           {
             index,
@@ -436,6 +462,7 @@ const Whiteboard = ({ role, userID, roomID }) => {
             x2: clientX,
             y2: clientY,
             type: elements[index].type,
+            color: elementColor, // Preserve the color!
           },
           elements,
           roomID
@@ -465,7 +492,15 @@ const Whiteboard = ({ role, userID, roomID }) => {
       const index = elements.findIndex((el) => el.id === selectedElement.id);
 
       if (index !== -1) {
-        updatePencilElementWhenMoving({ index, newPoints }, elements);
+        // Preserve the color during pencil movement
+        updatePencilElementWhenMoving(
+          {
+            index,
+            newPoints,
+            color: selectedElement.color // Make sure color is preserved
+          },
+          elements
+        );
       }
 
       return;
@@ -476,7 +511,7 @@ const Whiteboard = ({ role, userID, roomID }) => {
       action === actions.MOVING &&
       selectedElement
     ) {
-      const { id, x1, x2, y1, y2, type, offsetX, offsetY, text } =
+      const { id, x1, x2, y1, y2, type, offsetX, offsetY, text, color } =
         selectedElement;
 
       const width = x2 - x1;
@@ -498,6 +533,7 @@ const Whiteboard = ({ role, userID, roomID }) => {
             type,
             index,
             text,
+            color, // Add color here
           },
           elements,
           roomID
@@ -510,7 +546,7 @@ const Whiteboard = ({ role, userID, roomID }) => {
       action === actions.RESIZING &&
       selectedElement
     ) {
-      const { id, type, position, ...coordinates } = selectedElement;
+      const { id, type, position, color, ...coordinates } = selectedElement;
       const { x1, y1, x2, y2 } = getResizedCoordinates(
         clientX,
         clientY,
@@ -532,6 +568,7 @@ const Whiteboard = ({ role, userID, roomID }) => {
             type: selectedElement.type,
             id: selectedElement.id,
             index: selectedElementIndex,
+            color: selectedElement.color, // Add color here to preserve it
           },
           elements,
           roomID

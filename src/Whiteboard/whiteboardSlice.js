@@ -5,7 +5,8 @@ const initialState = {
   elements: [],
   slepingStudent: null,
   messages: [{}],
-  quizAnswer: null
+  quizAnswer: null,
+  selectedColor: "#000000" // Add this line for color state
 };
 
 const whiteboardSlice = createSlice({
@@ -25,7 +26,6 @@ const whiteboardSlice = createSlice({
       } else {
         // if index will be found
         // update element in our array of elements
-
         state.elements[index] = action.payload;
       }
     },
@@ -40,11 +40,22 @@ const whiteboardSlice = createSlice({
     },
     setQuizAnswer: (state, action) => {
       state.quizAnswer = action.payload
+    },
+    // Add new reducer for color selection
+    setSelectedColor: (state, action) => {
+      state.selectedColor = action.payload;
     }
   },
 });
 
-export const { setToolType, updateElement, setElements, setSleepingStudent, setMessages, setQuizAnswer } =
-  whiteboardSlice.actions;
+export const { 
+  setToolType, 
+  updateElement, 
+  setElements, 
+  setSleepingStudent, 
+  setMessages, 
+  setQuizAnswer,
+  setSelectedColor // Export the new action
+} = whiteboardSlice.actions;
 
 export default whiteboardSlice.reducer;

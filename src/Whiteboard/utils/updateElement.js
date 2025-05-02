@@ -5,7 +5,7 @@ import { store } from "../../store/store";
 import { setElements } from "../whiteboardSlice";
 
 export const updatePencilElementWhenMoving = (
-  { index, newPoints },
+  { index, newPoints, color }, // Add color parameter
   elements
 ) => {
   const elementsCopy = [...elements];
@@ -13,18 +13,18 @@ export const updatePencilElementWhenMoving = (
   elementsCopy[index] = {
     ...elementsCopy[index],
     points: newPoints,
+    color: color || elementsCopy[index].color, // Preserve the color
   };
 
-  console.log("updating pencil element");
+  console.log("updating pencil element with color:", color);
 
   const updatedPencilElement = elementsCopy[index];
 
   store.dispatch(setElements(elementsCopy));
   emitElementUpdate(updatedPencilElement);
 };
-
 export const updateElement = (
-  { id, x1, x2, y1, y2, type, index, text, src },
+  { id, x1, x2, y1, y2, type, index, text, src, color },
   elements, roomID
 ) => {
   const elementsCopy = [...elements];
@@ -32,6 +32,7 @@ export const updateElement = (
   switch (type) {
     case toolTypes.LINE:
     case toolTypes.RECTANGLE:
+    case toolTypes.CIRCLE:
       const updatedElement = createElement({
         id,
         x1,
@@ -39,6 +40,7 @@ export const updateElement = (
         x2,
         y2,
         toolType: type,
+        color, // Include color when updating
       });
 
       elementsCopy[index] = updatedElement;
@@ -57,6 +59,7 @@ export const updateElement = (
             y: y2,
           },
         ],
+        color, // Include color when updating
       };
 
       const updatedPencilElement = elementsCopy[index];
@@ -75,6 +78,7 @@ export const updateElement = (
           y2,
           toolType: type,
           text,
+          color, // Include color when updating
         }),
       };
 
@@ -84,10 +88,7 @@ export const updateElement = (
 
       emitElementUpdate(updatedTextElement, roomID);
       break;
-
     case toolTypes.IMAGE: {
-      console.log(`from update lemene t : :\n\n ${id} \n ${src}`);
-      
       elementsCopy[index] = {
         ...createElement({
           id,
@@ -104,8 +105,6 @@ export const updateElement = (
 
       store.dispatch(setElements(elementsCopy));
 
-      console.log("EMitting element ");
-      
       emitElementUpdate(updatedImageElement, roomID);
       break;
     }

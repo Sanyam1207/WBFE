@@ -11,6 +11,7 @@ import selectionIcon from "../resources/icons/selection.svg";
 import textIcon from "../resources/icons/text.svg";
 import { emitClearWhiteboard } from "../socketConn/socketConn";
 import { setElements, setToolType } from "./whiteboardSlice";
+import ColorPicker from "./utils/ColorPicker";
 
 const IconButton = ({ src, type, isRubber, roomID }) => {
   const dispatch = useDispatch();
@@ -45,6 +46,7 @@ const Menu = ({ roomID }) => {
 
   return (
     <div className="menu_container">
+      <ColorPicker />
       <IconButton src={rectangleIcon} type={toolTypes.RECTANGLE} />
       <IconButton src={lineIcon} type={toolTypes.LINE} />
       <IconButton src={rubberIcon} isRubber roomID={roomID} />
@@ -52,6 +54,7 @@ const Menu = ({ roomID }) => {
       <IconButton src={textIcon} type={toolTypes.TEXT} />
       <IconButton src={selectionIcon} type={toolTypes.SELECTION} />
       <IconButton src={ImageIcon} type={toolTypes.IMAGE} />
+      <IconButton src='https://i.pinimg.com/736x/cb/0c/e8/cb0ce84c89ea556e5540e436958b797e.jpg' type={toolTypes.CIRCLE} />
     </div>
   );
 };
