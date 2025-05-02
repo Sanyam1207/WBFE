@@ -33,6 +33,7 @@ export const updateElement = (
     case toolTypes.LINE:
     case toolTypes.RECTANGLE:
     case toolTypes.CIRCLE:
+    case toolTypes.TRIANGLE:
       const updatedElement = createElement({
         id,
         x1,

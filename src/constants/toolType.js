@@ -5,5 +5,6 @@ export const toolTypes = {
   TEXT: "TEXT",
   SELECTION: "SELECTION",
   IMAGE : "IMAGE",
-  CIRCLE : "CIRCLE"
+  CIRCLE : "CIRCLE",
+  TRIANGLE: "TRIANGLE" // Add this line
 };

@@ -296,7 +296,8 @@ const Whiteboard = ({ role, userID, roomID }) => {
       case toolTypes.RECTANGLE:
       case toolTypes.LINE:
       case toolTypes.PENCIL:
-      case toolTypes.CIRCLE: {
+      case toolTypes.CIRCLE:
+      case toolTypes.TRIANGLE: {
         const element = createElement({
           x1: clientX,
           y1: adjustedY,
@@ -378,12 +379,17 @@ const Whiteboard = ({ role, userID, roomID }) => {
   };
 
   const handleMouseUp = () => {
+    console.log("Mouse up called, action:", action, "selectedElement:", selectedElement?.id);
+
     const selectedElementIndex = elements.findIndex(
       (el) => el.id === selectedElement?.id
     );
 
     if (selectedElementIndex !== -1) {
       if (action === actions.DRAWING || action === actions.RESIZING) {
+        // Log the element type to verify it's being recognized
+        console.log("Element type:", elements[selectedElementIndex].type);
+
         if (adjustmentRequired(elements[selectedElementIndex].type)) {
           const { x1, y1, x2, y2 } = adjustElementCoordinates(
             elements[selectedElementIndex]
@@ -391,7 +397,8 @@ const Whiteboard = ({ role, userID, roomID }) => {
 
           // Get the current color from the element before adjustment
           const currentColor = elements[selectedElementIndex].color;
-          console.log("Element color before adjustment:", currentColor);
+
+          console.log("Adjusting element coordinates:", { x1, y1, x2, y2, color: currentColor });
 
           updateElement(
             {
@@ -411,9 +418,11 @@ const Whiteboard = ({ role, userID, roomID }) => {
       }
     }
 
+    // Reset action and selected element regardless of whether the element was found
     setAction(null);
     setSelectedElement(null);
   };
+
 
   // The issue is in the handleMouseMove function where the color isn't being preserved
   // Here's the fix for your Whiteboard.js file:

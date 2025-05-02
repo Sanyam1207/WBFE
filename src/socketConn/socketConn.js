@@ -24,7 +24,7 @@ function dataURLtoBlob(dataurl) {
 }
 
 export const connectWithSocketServer = (roomID, userID) => {
-  socket = io("http://localhost:3003");
+  socket = io("https://wbbe.onrender.com");
   console.log(`room ID from connect to socket : : ${roomID} : : ${userID}`);
 
   socket.on("connect", () => {
@@ -43,14 +43,14 @@ export const connectWithSocketServer = (roomID, userID) => {
   });
 
   socket.on("element-update", (elementData) => {
-    
+
     setTimeout(() => {
       store.dispatch(updateElement(elementData)); // Update the whiteboard with new element
     }, 500);
   });
 
   socket.on("whiteboard-clear", () => {
-    
+
     setTimeout(() => {
       store.dispatch(setElements([])); // Clear the whiteboard
     }, 500);
@@ -67,7 +67,7 @@ export const connectWithSocketServer = (roomID, userID) => {
 
   socket.on("cursor-position", (cursorData) => {
     setTimeout(() => {
-    store.dispatch(updateCursorPosition(cursorData));
+      store.dispatch(updateCursorPosition(cursorData));
     }, 500);
   });
 

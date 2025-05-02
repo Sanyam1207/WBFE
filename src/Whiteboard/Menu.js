@@ -46,12 +46,20 @@ const Menu = ({ roomID }) => {
 
   return (
     <div className="menu_container">
+      <div style={{
+        position: 'absolute',
+        top: '0',
+        left: '600px'
+      }}>
       <ColorPicker />
+      </div>
+      
       <IconButton src={rectangleIcon} type={toolTypes.RECTANGLE} />
       <IconButton src={lineIcon} type={toolTypes.LINE} />
       <IconButton src={rubberIcon} isRubber roomID={roomID} />
       <IconButton src={pencilIcon} type={toolTypes.PENCIL} />
       <IconButton src={textIcon} type={toolTypes.TEXT} />
+      <IconButton src={'https://i.pinimg.com/736x/cb/0c/e8/cb0ce84c89ea556e5540e436958b797e.jpg'} type={toolTypes.TRIANGLE} />
       <IconButton src={selectionIcon} type={toolTypes.SELECTION} />
       <IconButton src={ImageIcon} type={toolTypes.IMAGE} />
       <IconButton src='https://i.pinimg.com/736x/cb/0c/e8/cb0ce84c89ea556e5540e436958b797e.jpg' type={toolTypes.CIRCLE} />

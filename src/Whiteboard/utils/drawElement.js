@@ -73,6 +73,7 @@ export const drawElement = ({ roughCanvas, context, element }) => {
     case toolTypes.RECTANGLE:
     case toolTypes.LINE:
     case toolTypes.CIRCLE:
+      case toolTypes.TRIANGLE: // Add this case
       return roughCanvas.draw(element.roughElement);
     case toolTypes.PENCIL:
       drawPencilElement(context, element);
