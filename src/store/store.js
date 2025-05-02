@@ -4,6 +4,7 @@ import cursorSliceReducer from "../CursorOverlay/cursorSlice";
 import audioReducer from './audioSlice'
 import  aiReducer from "../store/questionSlice"
 import fileReducer from "./fileSlice"
+import websiteReducer from "./websiteSlice"
 
 export const store = configureStore({
   reducer: {
@@ -11,7 +12,8 @@ export const store = configureStore({
     cursor: cursorSliceReducer,
     audioStreaming: audioReducer,
     ai:aiReducer,
-    file: fileReducer
+    file: fileReducer,
+    website: websiteReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

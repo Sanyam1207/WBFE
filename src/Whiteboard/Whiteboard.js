@@ -36,6 +36,8 @@ import {
   setMessages,
   updateElement as updateElementInStore,
 } from "./whiteboardSlice";
+import WebsiteShareControl from "../components/WebsiteShareControl";
+import WebsiteDisplay from "../components/WebsiteDisplay";
 
 let emitCursor = true;
 let lastCursorPosition;
@@ -1356,6 +1358,8 @@ const Whiteboard = ({ role, userID, roomID }) => {
             X
           </button>
           <PdfViewer />
+          <WebsiteShareControl roomID={roomID} userID={userID} isTeacher={true} />
+          <WebsiteDisplay roomID={roomID} userID={userID} />
         </div>
       )}
     </>

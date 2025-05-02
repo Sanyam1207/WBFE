@@ -21,6 +21,7 @@ function WhiteboardPage() {
     <div>
       <Whiteboard role={data.role} userID={data.userID} roomID={data.roomID} />
       <CursorOverlay />
+      
     </div>
   );
 }

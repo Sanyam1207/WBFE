@@ -8,6 +8,7 @@ import { setFile } from "../store/fileSlice";
 import { setAnswerFromAI } from "../store/questionSlice";
 import { store } from "../store/store";
 import { setElements, setMessages, setQuizAnswer, setSleepingStudent, updateElement } from "../Whiteboard/whiteboardSlice";
+import { resetSharingState, setSharedWebsite } from "../store/websiteSlice";
 
 let socket;
 
@@ -24,7 +25,8 @@ function dataURLtoBlob(dataurl) {
 }
 
 export const connectWithSocketServer = (roomID, userID) => {
-  socket = io("https://wbbe.onrender.com");
+  // https://wbbe.onrender.com
+  socket = io("http://localhost:3003");
   console.log(`room ID from connect to socket : : ${roomID} : : ${userID}`);
 
   socket.on("connect", () => {
@@ -112,6 +114,23 @@ export const connectWithSocketServer = (roomID, userID) => {
 
 
 
+  socket.on('website-shared', ({ websiteUrl, userID }) => {
+    console.log(`Received website URL: ${websiteUrl} from user: ${userID}`);
+
+    // Dispatch action to store the shared website
+    store.dispatch(setSharedWebsite({ websiteUrl, sharedBy: userID }));
+  });
+
+  // Add a listener for when someone closes the shared website
+  socket.on('website-closed', ({ userID, roomID }) => {
+    console.log(`Website sharing closed by user: ${userID} in room: ${roomID}`);
+
+    // Reset the sharing state in Redux
+    store.dispatch(resetSharingState());
+  });
+
+
+
   socket.on('audioStream', ({ audioData, userID }) => {
     try {
       // Validate audio data
@@ -195,4 +214,22 @@ export const emitFile = ({ roomID, fileName, fileType, fileData }) => {
   console.log("Generated blob URL:", url);
   store.dispatch(setFile(url));
   socket.emit("file", { roomID, fileName, fileType, fileData });
+};
+
+export const emitWebsiteShare = ({ websiteUrl, roomID, userID }) => {
+  // Validate URL first (basic validation)
+  try {
+    new URL(websiteUrl); // This will throw an error if invalid
+    socket.emit('share-website', { websiteUrl, roomID, userID });
+    console.log(`Sharing website: ${websiteUrl} in room: ${roomID}`);
+  } catch (error) {
+    console.error('Invalid URL format:', error);
+    // You might want to handle this error in the UI as well
+  }
+};
+
+
+export const emitWebsiteClosed = ({ roomID, userID }) => {
+  socket.emit('website-closed', { roomID, userID });
+  console.log(`Closing website sharing in room: ${roomID}`);
 };
