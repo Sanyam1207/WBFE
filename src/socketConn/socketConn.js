@@ -25,8 +25,8 @@ function dataURLtoBlob(dataurl) {
 }
 
 export const connectWithSocketServer = (roomID, userID) => {
-  // https://wbbe.onrender.com
-  socket = io("http://localhost:3003");
+  // 
+  socket = io("https://wbbe.onrender.com");
   console.log(`room ID from connect to socket : : ${roomID} : : ${userID}`);
 
   socket.on("connect", () => {
