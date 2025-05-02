@@ -997,89 +997,186 @@ const Whiteboard = ({ role, userID, roomID }) => {
       )}
 
       {openImageModel && (
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            background: "white",
-            padding: "20px",
-            border: "1px solid black",
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          backgroundColor: "rgba(0,0,0,0.7)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: "#333",
+            borderRadius: "12px",
+            padding: "25px",
+            width: "400px",
+            maxWidth: "90%",
+            boxShadow: "0 5px 20px rgba(0,0,0,0.3)",
             display: "flex",
             flexDirection: "column",
-            alignItems: "center",
-            zIndex: 1000,
-          }}
-        >
-          <input
-            type="text"
-            placeholder="Enter image URL"
-            value={imageUrl || ""}
-            onChange={(e) => setImageUrl(e.target.value)}
-            style={{ marginBottom: "10px", width: "200px", padding: "5px" }}
-          />
-          <div>
-            <button
-              onClick={(e) => {
-                if (imageUrl) {
-                  // Add the image element to the canvas
-                  const element = createElement({
-                    x1: mousePosition.x,
-                    y1: mousePosition.y,
-                    x2: mousePosition.x + 600,
-                    y2: mousePosition.y + 600,
-                    toolType: toolTypes.IMAGE,
-                    id: uuid(),
-                    src: imageUrl,
-                    roomID,
-                  });
+            alignItems: "center"
+          }}>
+            <h3 style={{
+              color: "#fff",
+              textAlign: "center",
+              marginTop: 0,
+              marginBottom: "20px",
+              fontSize: "20px"
+            }}>Add Image</h3>
 
-                  setSelectedElement(element);
-                  dispatch(updateElementInStore(element));
-                }
-                setOpenImageModel(false);
-                setImageUrl(""); // Clear input field
+            <input
+              type="text"
+              placeholder="Enter image URL"
+              value={imageUrl || ""}
+              onChange={(e) => setImageUrl(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "12px 15px",
+                marginBottom: "20px",
+                fontSize: "14px",
+                border: "none",
+                borderRadius: "6px",
+                backgroundColor: "#444",
+                color: "#fff",
+                outline: "none"
               }}
-              style={{ marginRight: "10px" }}
-            >
-              Add
-            </button>
-            <button onClick={() => setOpenImageModel(false)}>Cancel</button>
+            />
+
+            <div style={{
+              display: "flex",
+              justifyContent: "center",
+              width: "100%"
+            }}>
+              <button
+                onClick={(e) => {
+                  if (imageUrl) {
+                    // Add the image element to the canvas
+                    const element = createElement({
+                      x1: mousePosition.x,
+                      y1: mousePosition.y,
+                      x2: mousePosition.x + 600,
+                      y2: mousePosition.y + 600,
+                      toolType: toolTypes.IMAGE,
+                      id: uuid(),
+                      src: imageUrl,
+                      roomID,
+                    });
+
+                    setSelectedElement(element);
+                    dispatch(updateElementInStore(element));
+                  }
+                  setOpenImageModel(false);
+                  setImageUrl(""); // Clear input field
+                }}
+                style={{
+                  padding: "10px 20px",
+                  minWidth: "100px",
+                  backgroundColor: imageUrl ? "#36408a" : "#555",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "6px",
+                  marginRight: "10px",
+                  cursor: imageUrl ? "pointer" : "not-allowed",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  transition: "all 0.2s ease"
+                }}
+                onMouseEnter={(e) => {
+                  if (imageUrl) {
+                    e.currentTarget.style.backgroundColor = "#141c59";
+                    e.currentTarget.style.transform = "scale(1.05)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (imageUrl) {
+                    e.currentTarget.style.backgroundColor = "#36408a";
+                    e.currentTarget.style.transform = "scale(1)";
+                  }
+                }}
+              >
+                Add
+              </button>
+              <button
+                onClick={() => setOpenImageModel(false)}
+                style={{
+                  padding: "10px 20px",
+                  minWidth: "100px",
+                  backgroundColor: "#E91E63",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  transition: "all 0.2s ease"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#C2185B";
+                  e.currentTarget.style.transform = "scale(1.05)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "#E91E63";
+                  e.currentTarget.style.transform = "scale(1)";
+                }}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}
+
+
 
       {role === "student" && <CursorOverlay />}
 
       {role === "student" && showPopup && (
         <div
           style={{
-            border: "2px solid black",
-            width: "200px",
             position: "absolute",
-            top: "80vh",
-            right: "0vh",
-            borderRadius: "20px",
-            display: "flex",
-            flexDirection: "column",
-            backgroundColor: "#787878",
+            bottom: "20px",
+            right: "20px",
+            width: "280px",
+            borderRadius: "12px",
+            overflow: "hidden",
+            boxShadow: "0 5px 20px rgba(0,0,0,0.3)",
+            backgroundColor: "#333",
             color: "#fff",
-            justifyContent: "center",
-            alignItems: "center",
+            animation: "pulse 2s infinite"
           }}
         >
+          <style>
+            {`@keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(233, 30, 99, 0.7); }
+        70% { box-shadow: 0 0 0 15px rgba(233, 30, 99, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(233, 30, 99, 0); }
+      }`}
+          </style>
           <button
             style={{
-              height: "100%",
               width: "100%",
+              border: "none",
+              backgroundColor: "transparent",
+              padding: "20px",
+              cursor: "pointer",
+              color: "#fff",
+              textAlign: "center"
             }}
-            className="awake-button"
             onClick={() => {
               doNotSendData();
             }}
           >
-            <h2>Are You Awake ?</h2>
-            <p>Press SPACE to confirm</p>
+            <div style={{ backgroundColor: "#E91E63", padding: "10px", borderRadius: "50%", width: "50px", height: "50px", margin: "0 auto 15px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"></path>
+              </svg>
+            </div>
+            <h2 style={{ margin: "0 0 10px 0", fontSize: "20px" }}>Are You Awake?</h2>
+            <p style={{ margin: "0", opacity: "0.8", fontSize: "14px" }}>Press SPACE to confirm</p>
           </button>
         </div>
       )}
@@ -1099,48 +1196,162 @@ const Whiteboard = ({ role, userID, roomID }) => {
         <div
           style={{
             position: "absolute",
-            fontSize: "2.2rem",
-            bottom: 20,
-            right: 10,
-            zIndex: 10,
+            bottom: "20px",
+            right: "20px",
+            padding: "12px 20px",
+            backgroundColor: "#E91E63",
+            color: "#fff",
+            borderRadius: "8px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+            fontSize: "18px",
+            fontWeight: "600",
+            display: "flex",
+            alignItems: "center",
+            zIndex: 1000,
+            animation: "fadeIn 0.5s ease"
           }}
         >
-          {sleptStudent} is sleeping
+          <style>
+            {`@keyframes fadeIn {
+        0% { opacity: 0; transform: translateY(20px); }
+        100% { opacity: 1; transform: translateY(0); }
+      }`}
+          </style>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "12px" }}>
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+          <span>{sleptStudent} is sleeping</span>
         </div>
       )}
 
+
       {openChatModal && (
-        <div className="chat-container">
-          <div className="chat-display">
+        <div className="chat-container" style={{
+          width: "400px",
+          borderRadius: "12px",
+          display: "flex",
+          position: "absolute",
+          bottom: "20px",
+          right: "20px",
+          flexDirection: "column",
+          backgroundColor: "#333",
+          color: "#fff",
+          overflow: "hidden",
+          boxShadow: "0 5px 20px rgba(0,0,0,0.3)",
+          zIndex: 1000
+        }}>
+          <div style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "12px 15px",
+            backgroundColor: "#36408a",
+            borderBottom: "1px solid rgba(255,255,255,0.1)"
+          }}>
+            <div style={{ fontWeight: "bold", fontSize: "16px" }}>Class Chat</div>
+            <button
+              onClick={() => setOpenChatModal(false)}
+              style={{
+                backgroundColor: "rgba(255,255,255,0.2)",
+                color: "#fff",
+                border: "none",
+                width: "24px",
+                height: "24px",
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                padding: 0,
+                transition: "background-color 0.2s"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.3)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.2)";
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div style={{
+            flex: 1,
+            padding: "10px",
+            overflow: "auto",
+            maxHeight: "250px",
+            minHeight: "200px"
+          }}>
             {messages.map((msg, index) => (
-              <div key={index} className="chat-message">
-                from : {msg.userID} : : {msg.message}
+              <div key={index} style={{
+                margin: "8px 0",
+                padding: "10px 12px",
+                backgroundColor: "#444",
+                borderRadius: "8px",
+                fontSize: "14px",
+                wordBreak: "break-word"
+              }}>
+                <div style={{ fontWeight: "bold", marginBottom: "4px", color: "#E91E63" }}>
+                  {msg.userID}
+                </div>
+                <div>{msg.message}</div>
               </div>
             ))}
           </div>
-          <div className="chat-input-container">
+          <div style={{
+            display: "flex",
+            padding: "10px 12px",
+            borderTop: "1px solid rgba(255,255,255,0.1)",
+            backgroundColor: "#282828"
+          }}>
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Type a message..."
-              className="chat-input"
+              style={{
+                flex: 1,
+                padding: "10px 12px",
+                fontSize: "14px",
+                border: "none",
+                borderRadius: "6px",
+                backgroundColor: "#444",
+                color: "#fff",
+                outline: "none"
+              }}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  handleSendChat();
+                }
+              }}
             />
             <button
               onClick={() => {
                 handleSendChat();
               }}
-              className="chat-send-button"
-            >
-              Send
-            </button>
-            <button
-              className="chat-send-button"
-              onClick={() => {
-                setOpenChatModal(false);
+              style={{
+                marginLeft: "10px",
+                padding: "10px 15px",
+                backgroundColor: "#36408a",
+                color: "#fff",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontWeight: "600",
+                fontSize: "14px",
+                transition: "background-color 0.3s ease"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#141c59";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#36408a";
               }}
             >
-              Close
+              Send
             </button>
           </div>
         </div>
@@ -1150,96 +1361,337 @@ const Whiteboard = ({ role, userID, roomID }) => {
           onClick={() => setPoleDialogue(true)}
           style={{
             right: 120,
+            backgroundColor: '#36408a',
+            color: '#fff',
+            border: 'none',
+            padding: '8px 15px',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: '600',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+            transition: 'background-color 0.3s ease, transform 0.2s ease',
+            position: 'absolute',
+            top: '10px',
+            display: 'flex',
+            alignItems: 'center'
           }}
-          className="chatbutton"
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#141c59';
+            e.currentTarget.style.transform = 'scale(1.05)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = '#36408a';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
         >
-          conduct poll
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
+            <path d="M16 6H3"></path>
+            <path d="M21 12H3"></path>
+            <path d="M21 18H3"></path>
+            <path d="M16 6l4 6-4 6"></path>
+          </svg>
+          Conduct Poll
         </button>
       )}
 
       {role === "teacher" && poleDialogue && (
-        <div className="papa-button-container">
-          <h3>Please select the correct answer</h3>
-          <div className="button-container">
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1200
+        }}>
+          <div style={{
+            backgroundColor: '#333',
+            borderRadius: '12px',
+            padding: '25px',
+            width: '500px',
+            maxWidth: '90%',
+            boxShadow: '0 5px 20px rgba(0,0,0,0.3)'
+          }}>
+            <h3 style={{
+              color: '#fff',
+              textAlign: 'center',
+              marginTop: 0,
+              marginBottom: '25px',
+              fontSize: '20px'
+            }}>Select the correct answer for your poll</h3>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, 1fr)',
+              gap: '15px',
+              marginBottom: '20px'
+            }}>
+              <button
+                onClick={() => manageQuizClick(1)}
+                style={{
+                  backgroundColor: '#444',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '15px',
+                  fontSize: '16px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#555';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#444';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                Option 1
+              </button>
+              <button
+                onClick={() => manageQuizClick(2)}
+                style={{
+                  backgroundColor: '#444',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '15px',
+                  fontSize: '16px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#555';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#444';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                Option 2
+              </button>
+              <button
+                onClick={() => manageQuizClick(3)}
+                style={{
+                  backgroundColor: '#444',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '15px',
+                  fontSize: '16px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#555';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#444';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                Option 3
+              </button>
+              <button
+                onClick={() => manageQuizClick(4)}
+                style={{
+                  backgroundColor: '#444',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '15px',
+                  fontSize: '16px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#555';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#444';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                Option 4
+              </button>
+            </div>
+
             <button
-              className="button"
-              onClick={() => {
-                manageQuizClick(1);
+              onClick={() => setPoleDialogue(false)}
+              style={{
+                backgroundColor: '#E91E63',
+                color: 'white',
+                border: 'none',
+                padding: '10px 15px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                display: 'block',
+                margin: '0 auto',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#C2185B';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#E91E63';
               }}
             >
-              Option 1
-            </button>
-            <button
-              className="button"
-              onClick={() => {
-                manageQuizClick(2);
-              }}
-            >
-              Option 2
-            </button>
-            <button
-              className="button"
-              onClick={() => {
-                manageQuizClick(3);
-              }}
-            >
-              Option 3
-            </button>
-            <button
-              className="button"
-              onClick={() => {
-                manageQuizClick(4);
-              }}
-            >
-              Option 4
+              Cancel
             </button>
           </div>
         </div>
       )}
 
       {role === "student" && quizAnswer && (
-        <div className="papa-button-container">
-          <h3>Please select the correct answer</h3>
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1200
+        }}>
+          <div style={{
+            backgroundColor: '#333',
+            borderRadius: '12px',
+            padding: '25px',
+            width: '500px',
+            maxWidth: '90%',
+            boxShadow: '0 5px 20px rgba(0,0,0,0.3)'
+          }}>
+            <h3 style={{
+              color: '#fff',
+              textAlign: 'center',
+              marginTop: 0,
+              marginBottom: '20px',
+              fontSize: '20px'
+            }}>Select your answer</h3>
 
-          {pollResult && (
-            <div>
-              <h2>{resultPoll}</h2>
+            {pollResult && (
+              <div style={{
+                backgroundColor: '#36408a',
+                color: '#fff',
+                textAlign: 'center',
+                padding: '15px',
+                borderRadius: '8px',
+                marginBottom: '20px'
+              }}>
+                <h2 style={{ margin: 0, fontSize: '18px' }}>{resultPoll}</h2>
+              </div>
+            )}
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, 1fr)',
+              gap: '15px',
+              marginBottom: '20px'
+            }}>
+              <button
+                onClick={() => handleStudentAnswer(1)}
+                style={{
+                  backgroundColor: '#444',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '15px',
+                  fontSize: '16px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#555';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#444';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                Option 1
+              </button>
+              <button
+                onClick={() => handleStudentAnswer(2)}
+                style={{
+                  backgroundColor: '#444',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '15px',
+                  fontSize: '16px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#555';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#444';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                Option 2
+              </button>
+              <button
+                onClick={() => handleStudentAnswer(3)}
+                style={{
+                  backgroundColor: '#444',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '15px',
+                  fontSize: '16px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#555';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#444';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                Option 3
+              </button>
+              <button
+                onClick={() => handleStudentAnswer(4)}
+                style={{
+                  backgroundColor: '#444',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '15px',
+                  fontSize: '16px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#555';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#444';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                Option 4
+              </button>
             </div>
-          )}
-
-          <div className="button-container">
-            <button
-              className="button"
-              onClick={() => {
-                handleStudentAnswer(1);
-              }}
-            >
-              Option 1
-            </button>
-            <button
-              className="button"
-              onClick={() => {
-                handleStudentAnswer(2);
-              }}
-            >
-              Option 2
-            </button>
-            <button
-              className="button"
-              onClick={() => {
-                handleStudentAnswer(3);
-              }}
-            >
-              Option 3
-            </button>
-            <button
-              className="button"
-              onClick={() => {
-                handleStudentAnswer(4);
-              }}
-            >
-              Option 4
-            </button>
           </div>
         </div>
       )}
@@ -1247,17 +1699,33 @@ const Whiteboard = ({ role, userID, roomID }) => {
       <button
         onClick={() => setAISearchOpen(true)}
         style={{
-          padding: 4,
-          borderRadius: 5,
+          padding: "10px",
+          borderRadius: "10px",
           position: "absolute",
-          top: 4,
-          left: 10,
+          top: "10px",
+          left: "10px",
           margin: 0,
+          backgroundColor: "#333",
+          border: "none",
+          cursor: "pointer",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+          transition: "transform 0.2s ease, box-shadow 0.2s ease",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = "scale(1.05)";
+          e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.3)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = "scale(1)";
+          e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
         }}
       >
         <img
           src={image}
-          alt="crashed"
+          alt="AI Search"
           style={{
             height: "30px",
             width: "auto",
@@ -1268,12 +1736,42 @@ const Whiteboard = ({ role, userID, roomID }) => {
         <AiSearchPopup userID={userID} onClose={setAISearchOpen} />
       )}
 
-      <button onClick={() => setOpenChatModal(true)} className="chatbutton">
+      <button
+        onClick={() => setOpenChatModal(true)}
+        style={{
+          position: "absolute",
+          top: "10px",
+          right: "10px",
+          backgroundColor: "#36408a",
+          color: "#fff",
+          border: "none",
+          padding: "8px 15px",
+          borderRadius: "6px",
+          cursor: "pointer",
+          fontSize: "14px",
+          fontWeight: "600",
+          display: "flex",
+          alignItems: "center",
+          boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+          transition: "background-color 0.3s ease, transform 0.2s ease"
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = "#141c59";
+          e.currentTarget.style.transform = "scale(1.05)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = "#36408a";
+          e.currentTarget.style.transform = "scale(1)";
+        }}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "8px" }}>
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
         Open Chat
       </button>
 
       {role === "teacher" && (
-        <div style={{ position: "absolute", top: 5, left: 60 }}>
+        <div style={{ position: "absolute", top: "10px", left: "60px" }}>
           <input
             id="file-upload"
             type="file"
@@ -1283,24 +1781,32 @@ const Whiteboard = ({ role, userID, roomID }) => {
           <label
             htmlFor="file-upload"
             style={{
-              display: "inline-block",
+              display: "inline-flex",
+              alignItems: "center",
               backgroundColor: "#36408a",
               color: "#fff",
-              padding: "12px 20px",
-              fontSize: "16px",
-              fontWeight: "bold",
+              padding: "10px 15px",
+              fontSize: "14px",
+              fontWeight: "600",
               borderRadius: "6px",
               cursor: "pointer",
               boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
-              transition: "background-color 0.3s ease",
+              transition: "all 0.3s ease"
             }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "#141c59")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "#595e91")
-            }
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#141c59";
+              e.currentTarget.style.transform = "scale(1.05)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#36408a";
+              e.currentTarget.style.transform = "scale(1)";
+            }}
           >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "8px" }}>
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
             Upload File
           </label>
         </div>
@@ -1338,30 +1844,69 @@ const Whiteboard = ({ role, userID, roomID }) => {
       {showPdf && (
         <div
           style={{
-            position: "absolute",
-            bottom: 10,
-            right: 10,
+            position: "fixed",
+            bottom: 0,
+            right: 0,
+            width: "80%",
+            height: "80%",
             display: "flex",
-            padding: 10,
+            flexDirection: "column",
             backgroundColor: "#fff",
+            borderTopLeftRadius: "12px",
+            boxShadow: "0 -5px 25px rgba(0,0,0,0.2)",
+            overflow: "hidden",
+            zIndex: 1000
           }}
         >
-          <button
-            onClick={() => {
-              setShowPdf(false);
-            }}
-            style={{
-              backgroundColor: "#303038",
-              color: "#fff",
-            }}
-          >
-            X
-          </button>
-          <PdfViewer />
-          <WebsiteShareControl roomID={roomID} userID={userID} isTeacher={true} />
+          <div style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "10px 15px",
+            backgroundColor: "#36408a",
+            color: "#fff"
+          }}>
+            <div style={{ fontWeight: "bold", fontSize: "16px" }}>Document Viewer</div>
+            <button
+              onClick={() => setShowPdf(false)}
+              style={{
+                backgroundColor: "rgba(255,255,255,0.2)",
+                color: "#fff",
+                border: "none",
+                width: "30px",
+                height: "30px",
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                transition: "background-color 0.2s"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.3)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.2)";
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
+            <div style={{ padding: "10px 15px", borderBottom: "1px solid #eee", display: "flex", alignItems: "center" }}>
+              <WebsiteShareControl roomID={roomID} userID={userID} isTeacher={true} />
+            </div>
+            <div style={{ flex: 1, overflow: "auto" }}>
+              <PdfViewer />
+            </div>
+          </div>
           <WebsiteDisplay roomID={roomID} userID={userID} />
         </div>
       )}
+
     </>
   );
 };

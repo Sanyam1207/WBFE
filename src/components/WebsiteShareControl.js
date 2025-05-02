@@ -6,10 +6,10 @@ import { resetSharingState } from '../store/websiteSlice';
 const WebsiteShareControl = ({ roomID, userID, isTeacher }) => {
   const dispatch = useDispatch();
   const [websiteUrl, setWebsiteUrl] = useState('');
-  
+
   // Use the isSharing state from Redux instead of local state
   const isSharing = useSelector((state) => state.website.isSharing);
-  
+
   // Listen for changes to isSharing and reset the URL input when sharing is complete
   useEffect(() => {
     if (!isSharing && websiteUrl !== '') {
@@ -24,7 +24,7 @@ const WebsiteShareControl = ({ roomID, userID, isTeacher }) => {
 
   const handleShare = () => {
     if (!websiteUrl) return;
-    
+
     emitWebsiteShare({ websiteUrl, roomID, userID });
     // No need to set local state, Redux will handle it
   };
@@ -34,19 +34,45 @@ const WebsiteShareControl = ({ roomID, userID, isTeacher }) => {
   };
 
   return (
-    <div className="website-share-control">
+    <div style={{
+      display: 'flex',
+      margin: '10px 0',
+      borderRadius: '8px',
+      overflow: 'hidden',
+      boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+    }}>
       <input
-        type="text"
+        type="url"
         placeholder="Enter website URL to share"
         value={websiteUrl}
-        onChange={handleUrlChange}
-        className="website-url-input"
-        disabled={isSharing}
+        onChange={(e) => setWebsiteUrl(e.target.value)}
+        style={{
+          flex: '1',
+          padding: '10px 15px',
+          fontSize: '14px',
+          border: 'none',
+          borderRight: 'none',
+          outline: 'none',
+          backgroundColor: '#333',
+          color: '#fff'
+        }}
       />
-      <button 
+      <button
         onClick={handleShare}
         disabled={!websiteUrl || isSharing}
-        className="share-button"
+        style={{
+          padding: '10px 15px',
+          fontSize: '14px',
+          fontWeight: '600',
+          color: 'white',
+          backgroundColor: isSharing ? '#444' : '#333',
+          border: 'none',
+          cursor: websiteUrl && !isSharing ? 'pointer' : 'not-allowed',
+          transition: 'background-color 0.3s ease',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
       >
         {isSharing ? 'Sharing...' : 'Share Website'}
       </button>
