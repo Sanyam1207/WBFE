@@ -2,18 +2,31 @@ import { io } from "socket.io-client";
 import {
   removeCursorPosition,
   updateCursorPosition,
-} from "../CursorOverlay/cursorSlice";
-import { clearAudioStream, setActiveAudioSource, setAudioStream } from "../store/audioSlice";
-import { setFile } from "../store/fileSlice";
-import { setAnswerFromAI } from "../store/questionSlice";
+} from "../store/slices/cursorSlice";
+import {
+  clearAudioStream,
+  setActiveAudioSource,
+  setAudioStream,
+} from "../store/slices/audioSlice";
+import { setFile } from "../store/slices/fileSlice";
+import { setAnswerFromAI } from "../store/slices/questionSlice";
 import { store } from "../store/store";
-import { setElements, setMessages, setQuizAnswer, setSleepingStudent, updateElement } from "../Whiteboard/whiteboardSlice";
-import { resetSharingState, setSharedWebsite } from "../store/websiteSlice";
+import {
+  setElements,
+  setMessages,
+  setQuizAnswer,
+  setSleepingStudent,
+  updateElement,
+} from "../store/slices/whiteboardSlice";
+import {
+  resetSharingState,
+  setSharedWebsite,
+} from "../store/slices/websiteSlice";
 
 let socket;
 
 function dataURLtoBlob(dataurl) {
-  const parts = dataurl.split(',');
+  const parts = dataurl.split(",");
   const mime = parts[0].match(/:(.*?);/)[1];
   const bstr = atob(parts[1]);
   let n = bstr.length;
@@ -25,7 +38,7 @@ function dataURLtoBlob(dataurl) {
 }
 
 export const connectWithSocketServer = (roomID, userID) => {
-  // 
+  //
   socket = io("https://wbbe.onrender.com");
   console.log(`room ID from connect to socket : : ${roomID} : : ${userID}`);
 
@@ -45,27 +58,25 @@ export const connectWithSocketServer = (roomID, userID) => {
   });
 
   socket.on("element-update", (elementData) => {
-
     setTimeout(() => {
       store.dispatch(updateElement(elementData)); // Update the whiteboard with new element
     }, 500);
   });
 
   socket.on("whiteboard-clear", () => {
-
     setTimeout(() => {
       store.dispatch(setElements([])); // Clear the whiteboard
     }, 500);
   });
 
-  socket.on('student-sleeping', (userID) => {
+  socket.on("student-sleeping", (userID) => {
     console.log(`\n\nStudent ID is sleeping : : : ${userID}`);
-    store.dispatch(setSleepingStudent(userID))
+    store.dispatch(setSleepingStudent(userID));
 
     setTimeout(() => {
-      store.dispatch(setSleepingStudent(null))
+      store.dispatch(setSleepingStudent(null));
     }, 8000);
-  })
+  });
 
   socket.on("cursor-position", (cursorData) => {
     setTimeout(() => {
@@ -77,27 +88,26 @@ export const connectWithSocketServer = (roomID, userID) => {
     store.dispatch(removeCursorPosition(disconnectedUserId)); // Remove cursor for disconnected user
   });
 
-  socket.on('message', ({ userID, message, roomID, messageCopy }) => {
+  socket.on("message", ({ userID, message, roomID, messageCopy }) => {
     console.log(`Message copy : : ${messageCopy}`);
 
-    store.dispatch(setMessages(messageCopy))
-  })
+    store.dispatch(setMessages(messageCopy));
+  });
 
-  socket.on('quiz', ({ correctAnswer }) => {
-    store.dispatch(setQuizAnswer(correctAnswer))
+  socket.on("quiz", ({ correctAnswer }) => {
+    store.dispatch(setQuizAnswer(correctAnswer));
     console.log(`correct from socket.on ${correctAnswer}`);
 
     setTimeout(() => {
-      store.dispatch(setQuizAnswer(null))
+      store.dispatch(setQuizAnswer(null));
     }, 1 * 15 * 500);
-  })
+  });
 
-  socket.on('got-definition', (result) => {
+  socket.on("got-definition", (result) => {
     console.log(result);
 
-    store.dispatch(setAnswerFromAI(result))
-  })
-
+    store.dispatch(setAnswerFromAI(result));
+  });
 
   socket.on("file-rechieved", (fileName, fileType, fileData) => {
     console.log("Received file:", fileName, fileType, fileData);
@@ -112,9 +122,7 @@ export const connectWithSocketServer = (roomID, userID) => {
     store.dispatch(setFile(url));
   });
 
-
-
-  socket.on('website-shared', ({ websiteUrl, userID }) => {
+  socket.on("website-shared", ({ websiteUrl, userID }) => {
     console.log(`Received website URL: ${websiteUrl} from user: ${userID}`);
 
     // Dispatch action to store the shared website
@@ -122,16 +130,14 @@ export const connectWithSocketServer = (roomID, userID) => {
   });
 
   // Add a listener for when someone closes the shared website
-  socket.on('website-closed', ({ userID, roomID }) => {
+  socket.on("website-closed", ({ userID, roomID }) => {
     console.log(`Website sharing closed by user: ${userID} in room: ${roomID}`);
 
     // Reset the sharing state in Redux
     store.dispatch(resetSharingState());
   });
 
-
-
-  socket.on('audioStream', ({ audioData, userID }) => {
+  socket.on("audioStream", ({ audioData, userID }) => {
     try {
       // Validate audio data
       if (!audioData) return;
@@ -147,19 +153,18 @@ export const connectWithSocketServer = (roomID, userID) => {
 
       // Optional: Create and play audio
       const audio = new Audio(processedAudioSrc);
-      audio.play().catch(error => {
-        console.error('Error playing audio:', error);
+      audio.play().catch((error) => {
+        console.error("Error playing audio:", error);
         store.dispatch(clearAudioStream());
       });
     } catch (error) {
-      console.error('Error processing audio stream:', error);
+      console.error("Error processing audio stream:", error);
       store.dispatch(clearAudioStream());
     }
   });
 };
 
 export const emitElementUpdate = (elementData, roomID) => {
-
   socket.emit("element-update", { elementData, roomID });
 };
 
@@ -174,34 +179,31 @@ export const emitCursorPosition = ({ cursorData, roomID }) => {
 export const emitStudentSleeping = (userID, roomID) => {
   console.log(`Student ID : : ${userID}, room ID : : : : : ${roomID}`);
 
-  socket.emit('student-sleeping', { userID, roomID })
-}
+  socket.emit("student-sleeping", { userID, roomID });
+};
 
 export const emitMessages = ({ userID, message, roomID, messageCopy }) => {
-  socket.emit('message', { userID, message, roomID, messageCopy })
-}
+  socket.emit("message", { userID, message, roomID, messageCopy });
+};
 
 export const quiz = ({ correctAnswer, roomID }) => {
   console.log(`correct asnwer :  :${correctAnswer}`);
 
-  socket.emit('quiz', { correctAnswer, roomID })
-}
+  socket.emit("quiz", { correctAnswer, roomID });
+};
 
 export const emitAudioStream = ({ audioData, roomID, userID }) => {
-  socket.emit('audioStream', {
+  socket.emit("audioStream", {
     audioData,
     roomID,
-    userID // Include user ID to identify the audio source
-  })
-}
+    userID, // Include user ID to identify the audio source
+  });
+};
 
 export const emitQuestion = ({ userID, question }) => {
-  console.log("emit question trigerred !!", userID)
-  socket.emit('get-definition', { userID, question })
-}
-
-
-
+  console.log("emit question trigerred !!", userID);
+  socket.emit("get-definition", { userID, question });
+};
 
 // --- New Exported Function for File Transfer ---
 export const emitFile = ({ roomID, fileName, fileType, fileData }) => {
@@ -220,16 +222,15 @@ export const emitWebsiteShare = ({ websiteUrl, roomID, userID }) => {
   // Validate URL first (basic validation)
   try {
     new URL(websiteUrl); // This will throw an error if invalid
-    socket.emit('share-website', { websiteUrl, roomID, userID });
+    socket.emit("share-website", { websiteUrl, roomID, userID });
     console.log(`Sharing website: ${websiteUrl} in room: ${roomID}`);
   } catch (error) {
-    console.error('Invalid URL format:', error);
+    console.error("Invalid URL format:", error);
     // You might want to handle this error in the UI as well
   }
 };
 
-
 export const emitWebsiteClosed = ({ roomID, userID }) => {
-  socket.emit('website-closed', { roomID, userID });
+  socket.emit("website-closed", { roomID, userID });
   console.log(`Closing website sharing in room: ${roomID}`);
 };

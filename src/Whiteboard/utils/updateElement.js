@@ -2,7 +2,7 @@ import { createElement } from ".";
 import { toolTypes } from "../../constants";
 import { emitElementUpdate } from "../../socketConn/socketConn";
 import { store } from "../../store/store";
-import { setElements } from "../whiteboardSlice";
+import { setElements } from "../../store/slices/whiteboardSlice";
 
 export const updatePencilElementWhenMoving = (
   { index, newPoints, color }, // Add color parameter
@@ -25,7 +25,8 @@ export const updatePencilElementWhenMoving = (
 };
 export const updateElement = (
   { id, x1, x2, y1, y2, type, index, text, src, color },
-  elements, roomID
+  elements,
+  roomID
 ) => {
   const elementsCopy = [...elements];
 
@@ -98,9 +99,9 @@ export const updateElement = (
           toolType: type,
           x2,
           y2,
-          src: src
-        })
-      }
+          src: src,
+        }),
+      };
 
       const updatedImageElement = elementsCopy[index];
 

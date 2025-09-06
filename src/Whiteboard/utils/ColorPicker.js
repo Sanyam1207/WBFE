@@ -1,10 +1,12 @@
 import React from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { setSelectedColor } from "../whiteboardSlice";
+import { setSelectedColor } from "../../store/slices/whiteboardSlice";
 
 const ColorPicker = () => {
   const dispatch = useDispatch();
-  const selectedColor = useSelector((state) => state.whiteboard.selectedColor || "#000000");
+  const selectedColor = useSelector(
+    (state) => state.whiteboard.selectedColor || "#000000"
+  );
 
   const colors = [
     "#000000", // Black
@@ -24,12 +26,17 @@ const ColorPicker = () => {
 
   return (
     <div className="color_picker_container">
-      <div className="color_display" style={{ backgroundColor: selectedColor }}></div>
+      <div
+        className="color_display"
+        style={{ backgroundColor: selectedColor }}
+      ></div>
       <div className="color_options">
         {colors.map((color) => (
           <button
             key={color}
-            className={`color_button ${selectedColor === color ? "selected" : ""}`}
+            className={`color_button ${
+              selectedColor === color ? "selected" : ""
+            }`}
             style={{ backgroundColor: color }}
             onClick={() => handleColorChange(color)}
           />

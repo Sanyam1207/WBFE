@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
-import CursorOverlay from "./CursorOverlay/CursorOverlay";
+import CursorOverlay from "./Whiteboard/CursorOverlay";
 import { connectWithSocketServer } from "./socketConn/socketConn";
-import Whiteboard from "./Whiteboard/Whiteboard";
+import Whiteboard from "./Whiteboard/components/Whiteboard";
 
 function App() {
   useEffect(() => {
