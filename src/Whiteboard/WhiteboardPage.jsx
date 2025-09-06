@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import CursorOverlay from "./CursorOverlay";
 import { connectWithSocketServer } from "../socketConn/socketConn";
-import Whiteboard from "./components/Whiteboard";
+import Whiteboard from "./components/WhiteBoard/Whiteboard";
 import { useLocation } from "react-router-dom";
 
 function WhiteboardPage() {
