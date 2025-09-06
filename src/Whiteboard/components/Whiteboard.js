@@ -41,8 +41,8 @@ import {
 } from "../../store/slices/whiteboardSlice";
 
 // Import the new components
-import TeacherInterface from "./teacherInterface";
-import StudentInterface from "./studentInterface";
+import TeacherInterface from "./TeacherInterface/TeacherInterface";
+import StudentInterface from "./StudentInterface/StudentInterface";
 import CommonModals from "./commonModal";
 
 let emitCursor = true;
