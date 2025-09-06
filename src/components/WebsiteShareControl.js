@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { emitWebsiteShare } from '../socketConn/socketConn';
-import { resetSharingState } from '../store/websiteSlice';
 
 const WebsiteShareControl = ({ roomID, userID, isTeacher }) => {
-  const dispatch = useDispatch();
   const [websiteUrl, setWebsiteUrl] = useState('');
 
   // Use the isSharing state from Redux instead of local state
@@ -15,7 +13,7 @@ const WebsiteShareControl = ({ roomID, userID, isTeacher }) => {
     if (!isSharing && websiteUrl !== '') {
       setWebsiteUrl('');
     }
-  }, [isSharing]);
+  }, [isSharing, websiteUrl]);
 
   // Only teachers should be able to share websites
   if (!isTeacher) {
@@ -27,10 +25,6 @@ const WebsiteShareControl = ({ roomID, userID, isTeacher }) => {
 
     emitWebsiteShare({ websiteUrl, roomID, userID });
     // No need to set local state, Redux will handle it
-  };
-
-  const handleUrlChange = (e) => {
-    setWebsiteUrl(e.target.value);
   };
 
   return (

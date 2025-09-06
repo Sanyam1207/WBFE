@@ -6,5 +6,6 @@ export const toolTypes = {
   SELECTION: "SELECTION",
   IMAGE : "IMAGE",
   CIRCLE : "CIRCLE",
-  TRIANGLE: "TRIANGLE" // Add this line
+  TRIANGLE: "TRIANGLE",
+  RUBBER: "RUBBER" // Add eraser tool type
 };

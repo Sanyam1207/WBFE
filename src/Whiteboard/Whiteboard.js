@@ -34,6 +34,7 @@ import {
 } from "./utils";
 import {
   setMessages,
+  setElements,
   updateElement as updateElementInStore,
 } from "./whiteboardSlice";
 import WebsiteShareControl from "../components/WebsiteShareControl";
@@ -76,6 +77,7 @@ const Whiteboard = ({ role, userID, roomID }) => {
   const [imageUrl, setImageUrl] = useState();
   const [input, setInput] = useState("");
   const [showPdf, setShowPdf] = useState(true);
+  const [triangleDrawing, setTriangleDrawing] = useState(false); // Track triangle drawing state
 
   const [action, setAction] = useState(null);
   // eslint-disable-next-line
@@ -298,8 +300,7 @@ const Whiteboard = ({ role, userID, roomID }) => {
       case toolTypes.RECTANGLE:
       case toolTypes.LINE:
       case toolTypes.PENCIL:
-      case toolTypes.CIRCLE:
-      case toolTypes.TRIANGLE: {
+      case toolTypes.CIRCLE: {
         const element = createElement({
           x1: clientX,
           y1: adjustedY,
@@ -318,6 +319,34 @@ const Whiteboard = ({ role, userID, roomID }) => {
         dispatch(updateElementInStore(element));
         break;
       }
+
+      case toolTypes.TRIANGLE: {
+        // SATYAM: Triangle drag-to-start change
+        // Why: Previously the triangle started drawing immediately on small cursor moves
+        // which caused accidental shapes when the user only intended to click. To fix
+        // that, we only set a "triangleDrawing" pending flag on mousedown and actually
+        // create the triangle element on the first meaningful mousemove (a deliberate drag).
+        // What: setTriangleDrawing(true) defers element creation until handleMouseMove.
+        setTriangleDrawing(true);
+        break;
+      }
+      
+      case toolTypes.RUBBER: {
+        // SATYAM: Eraser changed from "clear all on select" to selective erase
+        // Why: The eraser previously cleared the entire canvas as soon as it was selected.
+        // That is destructive and unexpected. Now it erases elements under the cursor on
+        // click or while dragging.
+        // What: Find an element at the pointer and remove it, then set action to ERASING
+        // so mousemove continues erasing while the button is held.
+        const elementToDelete = getElementAtPosition(clientX, clientY, elements);
+        if (elementToDelete) {
+          const updatedElements = elements.filter((el) => el.id !== elementToDelete.id);
+          dispatch(setElements(updatedElements));
+        }
+        setAction(actions.ERASING);
+        break;
+      }
+      
       case toolTypes.TEXT: {
         const element = createElement({
           x1: clientX,
@@ -383,6 +412,18 @@ const Whiteboard = ({ role, userID, roomID }) => {
   const handleMouseUp = () => {
     console.log("Mouse up called, action:", action, "selectedElement:", selectedElement?.id);
 
+    // Reset triangle drawing state
+    if (triangleDrawing) {
+      setTriangleDrawing(false);
+    }
+
+    // Handle erasing action - just reset the action
+    if (action === actions.ERASING) {
+      setAction(null);
+      setSelectedElement(null);
+      return;
+    }
+
     const selectedElementIndex = elements.findIndex(
       (el) => el.id === selectedElement?.id
     );
@@ -432,9 +473,6 @@ const Whiteboard = ({ role, userID, roomID }) => {
   const handleMouseMove = (event) => {
     const { clientX, clientY } = event;
 
-    // Get the current selected color from the Redux store to ensure we always have it
-    const selectedColor = store.getState().whiteboard.selectedColor || "#000000";
-
     lastCursorPosition = {
       cursorData: { x: clientX, y: clientY },
       roomID: roomID,
@@ -450,6 +488,25 @@ const Whiteboard = ({ role, userID, roomID }) => {
         emitCursor = true;
         emitCursorPosition(lastCursorPosition);
       }, [80]);
+    }
+
+    // Handle triangle tool drag-to-draw
+    if (triangleDrawing && toolType === toolTypes.TRIANGLE && !action) {
+      // Start drawing triangle on first mouse move after mouse down
+      const element = createElement({
+        x1: clientX,
+        y1: clientY,
+        x2: clientX,
+        y2: clientY,
+        toolType,
+        id: uuid(),
+        color: selectedColor,
+      });
+
+      setAction(actions.DRAWING);
+      setSelectedElement(element);
+      dispatch(updateElementInStore(element));
+      setTriangleDrawing(false); // Reset flag after starting draw
     }
 
     if (action === actions.DRAWING) {
@@ -481,12 +538,39 @@ const Whiteboard = ({ role, userID, roomID }) => {
       }
     }
 
+    if (action === actions.ERASING) {
+      // Continue erasing while dragging
+      const elementToDelete = getElementAtPosition(clientX, clientY, elements);
+      if (elementToDelete) {
+        const updatedElements = elements.filter(el => el.id !== elementToDelete.id);
+        dispatch(setElements(updatedElements));
+      }
+    }
+
     if (toolType === toolTypes.SELECTION) {
       const element = getElementAtPosition(clientX, clientY, elements);
 
       event.target.style.cursor = element
         ? getCursorForPosition(element.position)
         : "default";
+    }
+
+    if (toolType === toolTypes.RUBBER) {
+      // Set eraser cursor with custom styling
+      event.target.style.cursor = `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="%23ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.6 0-3.6l9.6-9.6c1-1 2.6-1 3.6 0l5.6 5.6c1 1 1 2.6 0 3.6L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>') 16 16, crosshair`;
+    } else if (toolType === toolTypes.PENCIL) {
+      // Set pencil cursor for drawing tools
+      event.target.style.cursor = "crosshair";
+    } else if (toolType === toolTypes.RECTANGLE || toolType === toolTypes.LINE ||
+               toolType === toolTypes.CIRCLE || toolType === toolTypes.TRIANGLE) {
+      // Set crosshair cursor for shape tools
+      event.target.style.cursor = "crosshair";
+    } else if (toolType === toolTypes.TEXT) {
+      // Set text cursor for text tool
+      event.target.style.cursor = "text";
+    } else {
+      // Default cursor for other tools
+      event.target.style.cursor = "default";
     }
 
     if (
@@ -1003,29 +1087,40 @@ const Whiteboard = ({ role, userID, roomID }) => {
           left: 0,
           width: "100%",
           height: "100%",
-          backgroundColor: "rgba(0,0,0,0.7)",
+          background: "rgba(0, 0, 0, 0.8)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          zIndex: 1000
+          zIndex: 1000,
+          animation: "fadeIn 0.3s ease-out"
         }}>
           <div style={{
-            backgroundColor: "#333",
-            borderRadius: "12px",
-            padding: "25px",
-            width: "400px",
+            background: "rgba(255, 255, 255, 0.95)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            borderRadius: "20px",
+            padding: "30px",
+            width: "450px",
             maxWidth: "90%",
-            boxShadow: "0 5px 20px rgba(0,0,0,0.3)",
+            boxShadow: "0 20px 60px rgba(0, 0, 0, 0.2)",
+            border: "1px solid rgba(255, 255, 255, 0.2)",
             display: "flex",
             flexDirection: "column",
-            alignItems: "center"
+            alignItems: "center",
+            animation: "slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1)"
           }}>
             <h3 style={{
-              color: "#fff",
+              color: "#333",
               textAlign: "center",
               marginTop: 0,
-              marginBottom: "20px",
-              fontSize: "20px"
+              marginBottom: "25px",
+              fontSize: "24px",
+              fontWeight: "700",
+              background: "linear-gradient(145deg, #667eea, #764ba2)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent"
             }}>Add Image</h3>
 
             <input
@@ -1035,26 +1130,35 @@ const Whiteboard = ({ role, userID, roomID }) => {
               onChange={(e) => setImageUrl(e.target.value)}
               style={{
                 width: "100%",
-                padding: "12px 15px",
-                marginBottom: "20px",
-                fontSize: "14px",
-                border: "none",
-                borderRadius: "6px",
-                backgroundColor: "#444",
-                color: "#fff",
-                outline: "none"
+                padding: "16px 20px",
+                marginBottom: "25px",
+                fontSize: "16px",
+                border: "2px solid rgba(102, 126, 234, 0.2)",
+                borderRadius: "12px",
+                backgroundColor: "rgba(255, 255, 255, 0.9)",
+                color: "#333",
+                outline: "none",
+                transition: "all 0.3s ease"
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = "#667eea";
+                e.currentTarget.style.boxShadow = "0 0 0 3px rgba(102, 126, 234, 0.1)";
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = "rgba(102, 126, 234, 0.2)";
+                e.currentTarget.style.boxShadow = "none";
               }}
             />
 
             <div style={{
               display: "flex",
               justifyContent: "center",
-              width: "100%"
+              width: "100%",
+              gap: "15px"
             }}>
               <button
                 onClick={(e) => {
                   if (imageUrl) {
-                    // Add the image element to the canvas
                     const element = createElement({
                       x1: mousePosition.x,
                       y1: mousePosition.y,
@@ -1070,57 +1174,58 @@ const Whiteboard = ({ role, userID, roomID }) => {
                     dispatch(updateElementInStore(element));
                   }
                   setOpenImageModel(false);
-                  setImageUrl(""); // Clear input field
+                  setImageUrl("");
                 }}
                 style={{
-                  padding: "10px 20px",
-                  minWidth: "100px",
-                  backgroundColor: imageUrl ? "#36408a" : "#555",
-                  color: "#fff",
+                  padding: "14px 28px",
+                  minWidth: "120px",
+                  background: imageUrl ? "linear-gradient(145deg, #667eea, #764ba2)" : "rgba(200, 200, 200, 0.5)",
+                  color: imageUrl ? "#fff" : "#999",
                   border: "none",
-                  borderRadius: "6px",
-                  marginRight: "10px",
+                  borderRadius: "12px",
                   cursor: imageUrl ? "pointer" : "not-allowed",
-                  fontSize: "14px",
+                  fontSize: "16px",
                   fontWeight: "600",
-                  transition: "all 0.2s ease"
+                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                  boxShadow: imageUrl ? "0 8px 25px rgba(102, 126, 234, 0.3)" : "none"
                 }}
                 onMouseEnter={(e) => {
                   if (imageUrl) {
-                    e.currentTarget.style.backgroundColor = "#141c59";
-                    e.currentTarget.style.transform = "scale(1.05)";
+                    e.currentTarget.style.transform = "translateY(-2px) scale(1.05)";
+                    e.currentTarget.style.boxShadow = "0 12px 35px rgba(102, 126, 234, 0.4)";
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (imageUrl) {
-                    e.currentTarget.style.backgroundColor = "#36408a";
-                    e.currentTarget.style.transform = "scale(1)";
+                    e.currentTarget.style.transform = "translateY(0) scale(1)";
+                    e.currentTarget.style.boxShadow = "0 8px 25px rgba(102, 126, 234, 0.3)";
                   }
                 }}
               >
-                Add
+                Add Image
               </button>
               <button
                 onClick={() => setOpenImageModel(false)}
                 style={{
-                  padding: "10px 20px",
-                  minWidth: "100px",
-                  backgroundColor: "#E91E63",
+                  padding: "14px 28px",
+                  minWidth: "120px",
+                  background: "linear-gradient(145deg, #ff6b6b, #ee5a5a)",
                   color: "#fff",
                   border: "none",
-                  borderRadius: "6px",
+                  borderRadius: "12px",
                   cursor: "pointer",
-                  fontSize: "14px",
+                  fontSize: "16px",
                   fontWeight: "600",
-                  transition: "all 0.2s ease"
+                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                  boxShadow: "0 8px 25px rgba(255, 107, 107, 0.3)"
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#C2185B";
-                  e.currentTarget.style.transform = "scale(1.05)";
+                  e.currentTarget.style.transform = "translateY(-2px) scale(1.05)";
+                  e.currentTarget.style.boxShadow = "0 12px 35px rgba(255, 107, 107, 0.4)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "#E91E63";
-                  e.currentTarget.style.transform = "scale(1)";
+                  e.currentTarget.style.transform = "translateY(0) scale(1)";
+                  e.currentTarget.style.boxShadow = "0 8px 25px rgba(255, 107, 107, 0.3)";
                 }}
               >
                 Cancel
@@ -1140,87 +1245,152 @@ const Whiteboard = ({ role, userID, roomID }) => {
             position: "absolute",
             bottom: "20px",
             right: "20px",
-            width: "280px",
-            borderRadius: "12px",
+            width: "320px",
+            borderRadius: "20px",
             overflow: "hidden",
-            boxShadow: "0 5px 20px rgba(0,0,0,0.3)",
-            backgroundColor: "#333",
-            color: "#fff",
-            animation: "pulse 2s infinite"
+            boxShadow: "0 20px 60px rgba(0, 0, 0, 0.15)",
+            background: "rgba(255, 255, 255, 0.95)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            border: "1px solid rgba(255, 255, 255, 0.2)",
+            animation: "pulse 2s infinite, slideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1)"
           }}
         >
           <style>
-            {`@keyframes pulse {
-        0% { box-shadow: 0 0 0 0 rgba(233, 30, 99, 0.7); }
-        70% { box-shadow: 0 0 0 15px rgba(233, 30, 99, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(233, 30, 99, 0); }
-      }`}
+            {`
+            @keyframes pulse {
+              0% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7); }
+              70% { box-shadow: 0 0 0 20px rgba(102, 126, 234, 0); }
+              100% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0); }
+            }
+            @keyframes slideUp {
+              from {
+                transform: translateY(100px);
+                opacity: 0;
+              }
+              to {
+                transform: translateY(0);
+                opacity: 1;
+              }
+            }
+            `}
           </style>
           <button
             style={{
               width: "100%",
               border: "none",
-              backgroundColor: "transparent",
-              padding: "20px",
+              background: "transparent",
+              padding: "25px",
               cursor: "pointer",
-              color: "#fff",
-              textAlign: "center"
+              color: "#333",
+              textAlign: "center",
+              transition: "all 0.3s ease"
             }}
             onClick={() => {
               doNotSendData();
             }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(102, 126, 234, 0.1)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "transparent";
+            }}
           >
-            <div style={{ backgroundColor: "#E91E63", padding: "10px", borderRadius: "50%", width: "50px", height: "50px", margin: "0 auto 15px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <div style={{ 
+              background: "linear-gradient(145deg, #667eea, #764ba2)", 
+              padding: "15px", 
+              borderRadius: "50%", 
+              width: "60px", 
+              height: "60px", 
+              margin: "0 auto 20px", 
+              display: "flex", 
+              alignItems: "center", 
+              justifyContent: "center",
+              boxShadow: "0 8px 25px rgba(102, 126, 234, 0.3)",
+              animation: "bounce 1s infinite"
+            }}>
+              <style>
+                {`@keyframes bounce {
+                  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+                  40% { transform: translateY(-10px); }
+                  60% { transform: translateY(-5px); }
+                }`}
+              </style>
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#fff" }}>
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"></path>
               </svg>
             </div>
-            <h2 style={{ margin: "0 0 10px 0", fontSize: "20px" }}>Are You Awake?</h2>
-            <p style={{ margin: "0", opacity: "0.8", fontSize: "14px" }}>Press SPACE to confirm</p>
+            <h2 style={{ margin: "0 0 12px 0", fontSize: "24px", fontWeight: "700", background: "linear-gradient(145deg, #667eea, #764ba2)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Are You Awake?</h2>
+            <p style={{ margin: "0", opacity: "0.7", fontSize: "14px", fontWeight: "500" }}>Press SPACE to confirm</p>
           </button>
         </div>
       )}
 
-      <canvas
-        onMouseDown={handleMouseDown}
-        onMouseUp={handleMouseUp}
-        onMouseMove={handleMouseMove}
-        ref={canvasRef}
-        className={moveCanvas}
-        width={window.innerWidth}
-        height={window.innerHeight}
-        id="canvas"
-      />
+      <div className={role === "teacher" ? "canvas-container teacher-view" : "canvas-container"}>
+        <canvas
+          onMouseDown={handleMouseDown}
+          onMouseUp={handleMouseUp}
+          onMouseMove={handleMouseMove}
+          ref={canvasRef}
+          className={role === "student" ? "student-canvas" : ""}
+          width={window.innerWidth}
+          height={window.innerHeight}
+          id="canvas"
+        />
+      </div>
 
       {role === "teacher" && sleptStudent && (
         <div
           style={{
             position: "absolute",
-            bottom: "20px",
-            right: "20px",
-            padding: "12px 20px",
-            backgroundColor: "#E91E63",
-            color: "#fff",
-            borderRadius: "8px",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-            fontSize: "18px",
+            bottom: "30px",
+            right: "30px",
+            padding: "20px 30px",
+            background: "rgba(255, 255, 255, 0.95)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            color: "#333",
+            borderRadius: "16px",
+            boxShadow: "0 20px 60px rgba(0, 0, 0, 0.15)",
+            border: "1px solid rgba(255, 255, 255, 0.2)",
+            fontSize: "16px",
             fontWeight: "600",
             display: "flex",
             alignItems: "center",
+            gap: "12px",
             zIndex: 1000,
-            animation: "fadeIn 0.5s ease"
+            animation: "slideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1), glow 2s infinite"
           }}
         >
           <style>
-            {`@keyframes fadeIn {
-        0% { opacity: 0; transform: translateY(20px); }
-        100% { opacity: 1; transform: translateY(0); }
-      }`}
+            {`
+            @keyframes slideUp {
+              from { opacity: 0; transform: translateY(30px); }
+              to { opacity: 1; transform: translateY(0); }
+            }
+            @keyframes glow {
+              0%, 100% { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15); }
+              50% { box-shadow: 0 20px 60px rgba(255, 107, 107, 0.3); }
+            }
+            `}
           </style>
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "12px" }}>
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-          </svg>
-          <span>{sleptStudent} is sleeping</span>
+          <div style={{
+            background: "linear-gradient(145deg, #ff6b6b, #ee5a5a)",
+            borderRadius: "50%",
+            width: "40px",
+            height: "40px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 4px 15px rgba(255, 107, 107, 0.3)"
+          }}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#fff" }}>
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </div>
+          <span style={{ background: "linear-gradient(145deg, #667eea, #764ba2)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontWeight: "700" }}>
+            {sleptStudent} is sleeping
+          </span>
         </div>
       )}
 
@@ -1359,30 +1529,38 @@ const Whiteboard = ({ role, userID, roomID }) => {
       {role === "teacher" && (
         <button
           onClick={() => setPoleDialogue(true)}
-          style={{
-            right: 120,
-            backgroundColor: '#36408a',
-            color: '#fff',
-            border: 'none',
-            padding: '8px 15px',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: '600',
-            boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
-            transition: 'background-color 0.3s ease, transform 0.2s ease',
-            position: 'absolute',
-            top: '10px',
-            display: 'flex',
-            alignItems: 'center'
-          }}
+style={{
+  position: 'absolute',
+  top: '20px',
+  right: '200px',
+  background: "rgba(255, 255, 255, 0.95)",
+  backdropFilter: "blur(20px)",
+  WebkitBackdropFilter: "blur(20px)",
+  color: '#667eea',
+  border: '1px solid rgba(255, 255, 255, 0.2)',
+  padding: '12px 20px',
+  borderRadius: '16px',
+  cursor: 'pointer',
+  fontSize: '14px',
+  fontWeight: '600',
+  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  animation: "fadeIn 0.5s ease-out 0.4s both"
+}}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#141c59';
-            e.currentTarget.style.transform = 'scale(1.05)';
+            e.currentTarget.style.background = "rgba(102, 126, 234, 0.1)";
+            e.currentTarget.style.transform = "translateY(-4px) scale(1.05)";
+            e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.15)";
+            e.currentTarget.style.color = "#764ba2";
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#36408a';
-            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.background = "rgba(255, 255, 255, 0.95)";
+            e.currentTarget.style.transform = "translateY(0) scale(1)";
+            e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.1)";
+            e.currentTarget.style.color = "#667eea";
           }}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
@@ -1699,28 +1877,31 @@ const Whiteboard = ({ role, userID, roomID }) => {
       <button
         onClick={() => setAISearchOpen(true)}
         style={{
-          padding: "10px",
-          borderRadius: "10px",
+          padding: "12px",
+          borderRadius: "16px",
           position: "absolute",
-          top: "10px",
-          left: "10px",
+          top: "20px",
+          left: "20px",
           margin: 0,
-          backgroundColor: "#333",
-          border: "none",
+          background: "rgba(255, 255, 255, 0.95)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          border: "1px solid rgba(255, 255, 255, 0.2)",
           cursor: "pointer",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-          transition: "transform 0.2s ease, box-shadow 0.2s ease",
+          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
+          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
           display: "flex",
           alignItems: "center",
-          justifyContent: "center"
+          justifyContent: "center",
+          animation: "fadeIn 0.5s ease-out 0.2s both"
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.transform = "scale(1.05)";
-          e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.3)";
+          e.currentTarget.style.transform = "translateY(-4px) scale(1.05)";
+          e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.15)";
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.transform = "scale(1)";
-          e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+          e.currentTarget.style.transform = "translateY(0) scale(1)";
+          e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.1)";
         }}
       >
         <img
@@ -1740,28 +1921,36 @@ const Whiteboard = ({ role, userID, roomID }) => {
         onClick={() => setOpenChatModal(true)}
         style={{
           position: "absolute",
-          top: "10px",
-          right: "10px",
-          backgroundColor: "#36408a",
-          color: "#fff",
-          border: "none",
-          padding: "8px 15px",
-          borderRadius: "6px",
+          top: "20px",
+          right: "20px",
+          background: "rgba(255, 255, 255, 0.95)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          color: "#667eea",
+          border: "1px solid rgba(255, 255, 255, 0.2)",
+          padding: "12px 20px",
+          borderRadius: "16px",
           cursor: "pointer",
           fontSize: "14px",
           fontWeight: "600",
           display: "flex",
           alignItems: "center",
-          boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
-          transition: "background-color 0.3s ease, transform 0.2s ease"
+          gap: "8px",
+          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
+          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          animation: "fadeIn 0.5s ease-out 0.3s both"
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = "#141c59";
-          e.currentTarget.style.transform = "scale(1.05)";
+          e.currentTarget.style.background = "rgba(102, 126, 234, 0.1)";
+          e.currentTarget.style.transform = "translateY(-4px) scale(1.05)";
+          e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.15)";
+          e.currentTarget.style.color = "#764ba2";
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = "#36408a";
-          e.currentTarget.style.transform = "scale(1)";
+          e.currentTarget.style.background = "rgba(255, 255, 255, 0.95)";
+          e.currentTarget.style.transform = "translateY(0) scale(1)";
+          e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.1)";
+          e.currentTarget.style.color = "#667eea";
         }}
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "8px" }}>
@@ -1770,73 +1959,87 @@ const Whiteboard = ({ role, userID, roomID }) => {
         Open Chat
       </button>
 
-      {role === "teacher" && (
-        <div style={{ position: "absolute", top: "10px", left: "60px" }}>
-          <input
-            id="file-upload"
-            type="file"
-            style={{ display: "none" }}
-            onChange={handleFileChange}
-          />
-          <label
-            htmlFor="file-upload"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              backgroundColor: "#36408a",
-              color: "#fff",
-              padding: "10px 15px",
-              fontSize: "14px",
-              fontWeight: "600",
-              borderRadius: "6px",
-              cursor: "pointer",
-              boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
-              transition: "all 0.3s ease"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "#141c59";
-              e.currentTarget.style.transform = "scale(1.05)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "#36408a";
-              e.currentTarget.style.transform = "scale(1)";
-            }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "8px" }}>
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="17 8 12 3 7 8"></polyline>
-              <line x1="12" y1="3" x2="12" y2="15"></line>
-            </svg>
-            Upload File
-          </label>
-        </div>
-      )}
+      {/* PDF Upload Button - Always visible */}
+      <div style={{ position: "absolute", top: "20px", right: "20px", zIndex: 1001 }}>
+        <input
+          id="file-upload"
+          type="file"
+          style={{ display: "none" }}
+          onChange={handleFileChange}
+          accept=".pdf,.doc,.docx,.txt"
+        />
+        <label
+          htmlFor="file-upload"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            background: "rgba(255, 255, 255, 0.95)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            color: "#667eea",
+            padding: "12px 20px",
+            fontSize: "14px",
+            fontWeight: "600",
+            borderRadius: "16px",
+            cursor: "pointer",
+            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
+            border: "1px solid rgba(255, 255, 255, 0.2)",
+            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+            gap: "8px",
+            animation: "fadeIn 0.5s ease-out 0.1s both"
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(102, 126, 234, 0.1)";
+            e.currentTarget.style.transform = "translateY(-4px) scale(1.05)";
+            e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.15)";
+            e.currentTarget.style.color = "#764ba2";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "rgba(255, 255, 255, 0.95)";
+            e.currentTarget.style.transform = "translateY(0) scale(1)";
+            e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.1)";
+            e.currentTarget.style.color = "#667eea";
+          }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          📄 Upload PDF
+        </label>
+      </div>
 
+      {/* PDF Viewer Toggle Button */}
       <div
         onClick={() => setShowPdf(true)}
         style={{
           position: "absolute",
-          top: 5,
-          left: 200,
-          width: "40px",
-          height: "40px",
+          top: "90px",
+          right: "20px",
+          width: "50px",
+          height: "50px",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(45deg, #FF4081, #E91E63)",
-          borderRadius: "50%",
+          background: "linear-gradient(145deg, #667eea, #764ba2)",
+          borderRadius: "16px",
           cursor: "pointer",
-          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.3)",
-          transition: "transform 0.2s, box-shadow 0.2s",
+          boxShadow: "0 8px 25px rgba(102, 126, 234, 0.3)",
+          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          border: "1px solid rgba(255, 255, 255, 0.2)",
+          animation: "fadeIn 0.5s ease-out 0.5s both",
+          zIndex: 1001
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.transform = "scale(1.1)";
-          e.currentTarget.style.boxShadow = "0 6px 12px rgba(0, 0, 0, 0.4)";
+          e.currentTarget.style.transform = "translateY(-4px) scale(1.1)";
+          e.currentTarget.style.boxShadow = "0 12px 35px rgba(102, 126, 234, 0.4)";
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.transform = "scale(1)";
-          e.currentTarget.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.3)";
+          e.currentTarget.style.transform = "translateY(0) scale(1)";
+          e.currentTarget.style.boxShadow = "0 8px 25px rgba(102, 126, 234, 0.3)";
         }}
+        title="View PDF"
       >
         <Package2Icon style={{ color: "#fff", fontSize: "24px" }} />
       </div>

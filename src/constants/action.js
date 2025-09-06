@@ -3,4 +3,5 @@ export const actions = {
   WRITING: "WRITING",
   MOVING: "MOVING",
   RESIZING: "RESIZING",
+  ERASING: "ERASING",
 };
