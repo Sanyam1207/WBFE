@@ -1,17 +1,17 @@
 import { configureStore } from "@reduxjs/toolkit";
-import whiteboardSliceReducer from "../Whiteboard/whiteboardSlice";
-import cursorSliceReducer from "../CursorOverlay/cursorSlice";
-import audioReducer from './audioSlice'
-import  aiReducer from "../store/questionSlice"
-import fileReducer from "./fileSlice"
-import websiteReducer from "./websiteSlice"
+import whiteboardSliceReducer from "./slices/whiteboardSlice";
+import cursorSliceReducer from "./slices/cursorSlice";
+import audioReducer from "./slices/audioSlice";
+import aiReducer from "./slices/questionSlice";
+import fileReducer from "./slices/fileSlice";
+import websiteReducer from "./slices/websiteSlice";
 
 export const store = configureStore({
   reducer: {
     whiteboard: whiteboardSliceReducer,
     cursor: cursorSliceReducer,
     audioStreaming: audioReducer,
-    ai:aiReducer,
+    ai: aiReducer,
     file: fileReducer,
     website: websiteReducer,
   },

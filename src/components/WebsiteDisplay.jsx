@@ -1,11 +1,16 @@
-import React, { useEffect, useRef } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { closeSharedWebsite, resetSharingState } from '../store/websiteSlice';
-import { emitWebsiteClosed } from '../socketConn/socketConn';
+import React, { useEffect, useRef } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  closeSharedWebsite,
+  resetSharingState,
+} from "../store/slices/websiteSlice";
+import { emitWebsiteClosed } from "../socketConn/socketConn";
 
 const WebsiteDisplay = ({ roomID, userID }) => {
   const dispatch = useDispatch();
-  const { websiteUrl, isDisplaying, sharedBy } = useSelector((state) => state.website);
+  const { websiteUrl, isDisplaying, sharedBy } = useSelector(
+    (state) => state.website
+  );
   const iframeRef = useRef(null);
 
   useEffect(() => {
