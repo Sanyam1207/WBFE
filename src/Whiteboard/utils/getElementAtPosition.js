@@ -58,6 +58,29 @@ const positionWithinElement = (x, y, element) => {
       });
 
       return betweenAnyPoint ? cursorPositions.INSIDE : null;
+    
+    // SATYAM: Added support for CIRCLE and TRIANGLE shapes so eraser can detect and delete them
+    // Why: Previously eraser couldn't detect these shapes because getElementAtPosition didn't handle them
+    // What: CIRCLE uses bounding box detection, TRIANGLE checks if point is inside triangle area
+    case toolTypes.CIRCLE:
+      // For circles, use bounding box detection (simple approximation)
+      const centerX = (x1 + x2) / 2;
+      const centerY = (y1 + y2) / 2;
+      const radiusX = Math.abs(x2 - x1) / 2;
+      const radiusY = Math.abs(y2 - y1) / 2;
+      
+      // Check if point is inside ellipse bounds (rough approximation for hit detection)
+      const normalizedX = (x - centerX) / radiusX;
+      const normalizedY = (y - centerY) / radiusY;
+      const isInsideCircle = (normalizedX * normalizedX + normalizedY * normalizedY) <= 1.2; // 1.2 for easier clicking
+      
+      return isInsideCircle ? cursorPositions.INSIDE : null;
+      
+    case toolTypes.TRIANGLE:
+      // For triangles, check if point is inside triangle bounds (simplified bounding box check)
+      const triangleInside = x >= Math.min(x1, x2) && x <= Math.max(x1, x2) && 
+                           y >= Math.min(y1, y2) && y <= Math.max(y1, y2);
+      return triangleInside ? cursorPositions.INSIDE : null;
 
     default : break;
   }

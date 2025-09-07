@@ -78,6 +78,10 @@ const Whiteboard = ({ role, userID, roomID }) => {
   const [input, setInput] = useState("");
   const [showPdf, setShowPdf] = useState(true);
   const [triangleDrawing, setTriangleDrawing] = useState(false); // Track triangle drawing state
+  // SATYAM: Added drag-to-start for all shapes to prevent accidental drawing on drop
+  // Why: Shapes were drawing immediately on mousedown, causing accidental shapes when user just clicked
+  // What: Track when user is preparing to draw shapes, only start drawing on actual drag movement
+  const [shapeDrawing, setShapeDrawing] = useState(false); // Track shape drawing preparation
 
   const [action, setAction] = useState(null);
   // eslint-disable-next-line
@@ -100,6 +104,31 @@ const Whiteboard = ({ role, userID, roomID }) => {
     (state) => state.audioStreaming.activeAudioSource
   );
   const audioStream = useSelector((state) => state.audioStreaming.audioStream);
+
+  // SATYAM: Global mouseup listener to handle mouse release outside canvas
+  // Why: If user drags and releases mouse outside canvas, drawing continues indefinitely
+  // What: Add global mouseup listener that resets drawing states when mouse is released anywhere
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (action === actions.DRAWING || triangleDrawing || shapeDrawing) {
+        console.log("Global mouseup detected, stopping drawing");
+        setAction(null);
+        setSelectedElement(null);
+        setTriangleDrawing(false);
+        setShapeDrawing(false);
+      }
+    };
+
+    // Add global mouseup listener
+    document.addEventListener('mouseup', handleGlobalMouseUp);
+    document.addEventListener('mouseleave', handleGlobalMouseUp);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+      document.removeEventListener('mouseleave', handleGlobalMouseUp);
+    };
+  }, [action, triangleDrawing, shapeDrawing]);
 
   useEffect(() => {
     const handleSpacebar = (e) => {
@@ -299,8 +328,16 @@ const Whiteboard = ({ role, userID, roomID }) => {
     switch (toolType) {
       case toolTypes.RECTANGLE:
       case toolTypes.LINE:
-      case toolTypes.PENCIL:
       case toolTypes.CIRCLE: {
+        // SATYAM: Changed shapes to use drag-to-start like triangle
+        // Why: Shapes were drawing immediately on mousedown without drag, causing accidental shapes
+        // What: Set shapeDrawing flag instead of creating element immediately, element created on first mousemove
+        setShapeDrawing(true);
+        break;
+      }
+      
+      case toolTypes.PENCIL: {
+        // Pencil still draws immediately since it's a continuous drawing tool
         const element = createElement({
           x1: clientX,
           y1: adjustedY,
@@ -412,9 +449,20 @@ const Whiteboard = ({ role, userID, roomID }) => {
   const handleMouseUp = () => {
     console.log("Mouse up called, action:", action, "selectedElement:", selectedElement?.id);
 
+    // SATYAM: Force stop all drawing states on mouseup
+    // Why: Triangle and other shapes were continuing to draw after mouseup
+    // What: Reset all drawing flags immediately to prevent stuck drawing state
+    
     // Reset triangle drawing state
     if (triangleDrawing) {
+      console.log("Stopping triangle drawing");
       setTriangleDrawing(false);
+    }
+
+    // Reset shape drawing state to prevent stuck state
+    if (shapeDrawing) {
+      console.log("Stopping shape drawing");
+      setShapeDrawing(false);
     }
 
     // Handle erasing action - just reset the action
@@ -509,7 +557,37 @@ const Whiteboard = ({ role, userID, roomID }) => {
       setTriangleDrawing(false); // Reset flag after starting draw
     }
 
+    // SATYAM: Handle shape tools drag-to-draw (rectangle, line, circle)
+    // Why: Prevent accidental shape creation on simple clicks, only draw when user actually drags
+    // What: Create shape element on first mousemove after mousedown, similar to triangle behavior
+    if (shapeDrawing && (toolType === toolTypes.RECTANGLE || toolType === toolTypes.LINE || toolType === toolTypes.CIRCLE) && !action) {
+      // Start drawing shape on first mouse move after mouse down
+      const element = createElement({
+        x1: clientX,
+        y1: clientY,
+        x2: clientX,
+        y2: clientY,
+        toolType,
+        id: uuid(),
+        color: selectedColor,
+      });
+
+      setAction(actions.DRAWING);
+      setSelectedElement(element);
+      dispatch(updateElementInStore(element));
+      setShapeDrawing(false); // Reset flag after starting draw
+    }
+
     if (action === actions.DRAWING) {
+      // SATYAM: Add safety check for valid selected element
+      // Why: Sometimes drawing continues even after mouseup due to race conditions
+      // What: Only continue drawing if we have a valid selectedElement
+      if (!selectedElement) {
+        console.log("Drawing action but no selectedElement, stopping");
+        setAction(null);
+        return;
+      }
+
       // find index of selected element
       const index = elements.findIndex((el) => el.id === selectedElement.id);
 
@@ -535,6 +613,10 @@ const Whiteboard = ({ role, userID, roomID }) => {
           elements,
           roomID
         );
+      } else {
+        console.log("Selected element not found in elements array, stopping drawing");
+        setAction(null);
+        setSelectedElement(null);
       }
     }
 
