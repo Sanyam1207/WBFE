@@ -69,7 +69,7 @@ const IconButton = ({ src, type, roomID, label, icon }) => {
   );
 };
 
-const Menu = ({ roomID }) => {
+const Menu = ({ roomID, onAISearchOpen }) => {
   // SATYAM: Moved toolbar into a top header layout and consolidated tool controls here.
   // Why: Improve UX by showing all tools in a single top toolbar (upload, color, clear, slides).
   // What: This component now renders a fixed `.top-toolbar` header with tool icons, upload
@@ -279,6 +279,14 @@ const Menu = ({ roomID }) => {
 
         <div className="toolbar-right">
           <button className="upload-doc" onClick={handlePdfUpload} title="Upload Document">📄 Upload Doc</button>
+          <button
+            className="upload-doc ai-chat-button"
+            onClick={onAISearchOpen}
+            title="Open AI Chat"
+            style={{ marginLeft: '8px', background: 'linear-gradient(135deg,#06b6d4,#0ea5e9)' }}
+          >
+            🤖 AI Chat
+          </button>
           <button
             className="upload-doc"
             onClick={handleColorPickerToggle}

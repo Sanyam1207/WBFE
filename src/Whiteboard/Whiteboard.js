@@ -105,31 +105,6 @@ const Whiteboard = ({ role, userID, roomID }) => {
   );
   const audioStream = useSelector((state) => state.audioStreaming.audioStream);
 
-  // SATYAM: Global mouseup listener to handle mouse release outside canvas
-  // Why: If user drags and releases mouse outside canvas, drawing continues indefinitely
-  // What: Add global mouseup listener that resets drawing states when mouse is released anywhere
-  useEffect(() => {
-    const handleGlobalMouseUp = () => {
-      if (action === actions.DRAWING || triangleDrawing || shapeDrawing) {
-        console.log("Global mouseup detected, stopping drawing");
-        setAction(null);
-        setSelectedElement(null);
-        setTriangleDrawing(false);
-        setShapeDrawing(false);
-      }
-    };
-
-    // Add global mouseup listener
-    document.addEventListener('mouseup', handleGlobalMouseUp);
-    document.addEventListener('mouseleave', handleGlobalMouseUp);
-
-    // Cleanup
-    return () => {
-      document.removeEventListener('mouseup', handleGlobalMouseUp);
-      document.removeEventListener('mouseleave', handleGlobalMouseUp);
-    };
-  }, [action, triangleDrawing, shapeDrawing]);
-
   useEffect(() => {
     const handleSpacebar = (e) => {
       // Check if the spacebar was pressed
@@ -449,19 +424,15 @@ const Whiteboard = ({ role, userID, roomID }) => {
   const handleMouseUp = () => {
     console.log("Mouse up called, action:", action, "selectedElement:", selectedElement?.id);
 
-    // SATYAM: Force stop all drawing states on mouseup
-    // Why: Triangle and other shapes were continuing to draw after mouseup
-    // What: Reset all drawing flags immediately to prevent stuck drawing state
-    
     // Reset triangle drawing state
     if (triangleDrawing) {
-      console.log("Stopping triangle drawing");
       setTriangleDrawing(false);
     }
 
-    // Reset shape drawing state to prevent stuck state
+    // SATYAM: Reset shape drawing state to prevent stuck state
+    // Why: If user mousedown then mouseup without dragging, we need to clear the preparation flag
+    // What: Reset shapeDrawing flag on mouseup to allow next shape interaction
     if (shapeDrawing) {
-      console.log("Stopping shape drawing");
       setShapeDrawing(false);
     }
 
@@ -579,15 +550,6 @@ const Whiteboard = ({ role, userID, roomID }) => {
     }
 
     if (action === actions.DRAWING) {
-      // SATYAM: Add safety check for valid selected element
-      // Why: Sometimes drawing continues even after mouseup due to race conditions
-      // What: Only continue drawing if we have a valid selectedElement
-      if (!selectedElement) {
-        console.log("Drawing action but no selectedElement, stopping");
-        setAction(null);
-        return;
-      }
-
       // find index of selected element
       const index = elements.findIndex((el) => el.id === selectedElement.id);
 
@@ -613,10 +575,6 @@ const Whiteboard = ({ role, userID, roomID }) => {
           elements,
           roomID
         );
-      } else {
-        console.log("Selected element not found in elements array, stopping drawing");
-        setAction(null);
-        setSelectedElement(null);
       }
     }
 
@@ -1138,7 +1096,7 @@ const Whiteboard = ({ role, userID, roomID }) => {
     <>
       {role === "teacher" && (
         <>
-          <Menu roomID={roomID} />
+          <Menu roomID={roomID} onAISearchOpen={() => setAISearchOpen(true)} />
           {action === actions.WRITING ? (
             <textarea
               ref={textAreaRef}
